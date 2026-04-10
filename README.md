@@ -1,42 +1,42 @@
-# Nuxt 3 Minimal Starter
+# ASO-DB
 
-Look at the [Nuxt 3 documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+AI-assisted database tool for developers. Query with natural language, explore schemas visually, and get intelligent SQL suggestions.
 
-## Setup
-
-Make sure to install the dependencies:
+## Quick Start
 
 ```bash
-# yarn
-yarn install
+# Run with npx (no install)
+npx asodb postgresql://user:pass@localhost:5432/dbname
 
-# npm
-npm install
+# Or install globally
+npm install -g asodb
+asodb
+```
 
-# pnpm
+## Monorepo Structure
+
+```
+aso-db/
+├── apps/
+│   ├── web/          # Marketing site (Nuxt.js)
+│   └── db/           # CLI tool (Nitro + Vite) [IN DEVELOPMENT]
+├── packages/
+│   ├── shared/       # Shared types
+│   └── components/   # Shared UI components
+└── product.md        # Full product specification
+```
+
+## Development
+
+```bash
+# Install dependencies
 pnpm install
+
+# Run marketing site
+pnpm dev
+
+# Run CLI tool (when available)
+cd apps/db && pnpm dev
 ```
 
-## Development Server
-
-Start the development server on `http://localhost:3000`
-
-```bash
-npm run dev
-```
-
-## Production
-
-Build the application for production:
-
-```bash
-npm run build
-```
-
-Locally preview production build:
-
-```bash
-npm run preview
-```
-
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+See [product.md](./product.md) for full specifications.
