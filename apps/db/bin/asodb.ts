@@ -12,6 +12,7 @@ async function main() {
 
   const server = createOverviewServer({
     getTables: () => listTables(args.connectionString),
+    connectionString: args.connectionString,
   })
 
   server.listen(args.port ?? 0, '127.0.0.1')
