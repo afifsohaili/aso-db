@@ -1,6 +1,11 @@
 import { Pool } from 'pg'
 import type { FetchTableRecordsOptions, FetchTableRecordsResult } from '../../../../shared/types/table'
 
+export interface FetchOptions extends FetchTableRecordsOptions {
+  sort?: string | null
+  order?: 'asc' | 'desc' | null
+}
+
 // Create a single Pool instance for the application
 let pool: Pool | null = null
 
@@ -18,11 +23,18 @@ function getPool(): Pool {
   return pool
 }
 
+// Validate identifier to prevent SQL injection
+function isValidIdentifier(name: string): boolean {
+  // PostgreSQL identifiers can contain letters, digits, underscores, and dollar signs
+  // Must start with a letter or underscore
+  return /^[a-zA-Z_][a-zA-Z0-9_$]*$/.test(name)
+}
+
 async function fetchTableRecords(
   poolInstance: Pool,
-  options: FetchTableRecordsOptions,
+  options: FetchOptions,
 ): Promise<FetchTableRecordsResult> {
-  const { schema, tableName, page, limit } = options
+  const { schema, tableName, page, limit, sort, order } = options
   const offset = (page - 1) * limit
 
   // Get total count
@@ -31,9 +43,18 @@ async function fetchTableRecords(
   )
   const totalCount = Number.parseInt(countResult.rows[0].count, 10)
 
+  // Build query with optional sorting
+  let query = `SELECT * FROM "${schema}"."${tableName}"`
+  
+  if (sort && order && isValidIdentifier(sort)) {
+    query += ` ORDER BY "${sort}" ${order.toUpperCase()}`
+  }
+  
+  query += ` LIMIT $1 OFFSET $2`
+
   // Get records with pagination
   const recordsResult = await poolInstance.query<Record<string, unknown>>(
-    `SELECT * FROM "${schema}"."${tableName}" LIMIT $1 OFFSET $2`,
+    query,
     [limit, offset],
   )
 
@@ -60,16 +81,9 @@ async function fetchTableRecords(
   }
 }
 
-// Validate identifier to prevent SQL injection
-function isValidIdentifier(name: string): boolean {
-  // PostgreSQL identifiers can contain letters, digits, underscores, and dollar signs
-  // Must start with a letter or underscore
-  return /^[a-zA-Z_][a-zA-Z0-9_$]*$/.test(name)
-}
-
 export default defineEventHandler(async (event) => {
   const { schema, name } = getRouterParams(event)
-  const { page = '1', limit = '50' } = getQuery(event)
+  const { page = '1', limit = '50', sort, order } = getQuery(event)
 
   // Validate identifiers
   if (!isValidIdentifier(schema) || !isValidIdentifier(name)) {
@@ -78,6 +92,17 @@ export default defineEventHandler(async (event) => {
       statusMessage: 'Invalid schema or table name',
     })
   }
+
+  // Validate sort column if provided
+  if (sort && !isValidIdentifier(sort as string)) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Invalid sort column',
+    })
+  }
+
+  // Validate order if provided
+  const validOrder = order === 'asc' || order === 'desc' ? order : null
 
   const pageNum = Math.max(1, Number.parseInt(page as string, 10))
   const limitNum = Math.min(200, Math.max(1, Number.parseInt(limit as string, 10)))
@@ -103,6 +128,8 @@ export default defineEventHandler(async (event) => {
       tableName: name,
       page: pageNum,
       limit: limitNum,
+      sort: sort as string | undefined,
+      order: validOrder,
     })
 
     return result

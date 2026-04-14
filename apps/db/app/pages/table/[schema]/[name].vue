@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { FetchTableRecordsResult } from '~/shared/types/table'
+import type { SortState } from '~/components/table-detail.vue'
 
 const route = useRoute()
 const schema = route.params.schema as string
@@ -9,17 +10,27 @@ const tableName = route.params.name as string
 const page = ref(1)
 const limit = ref(50)
 
+// Sort state
+const sort = ref<SortState>({ column: null, direction: null })
+
+// Build sort query string
+const sortQuery = computed(() => {
+  if (!sort.value.column || !sort.value.direction) return ''
+  return `&sort=${sort.value.column}&order=${sort.value.direction}`
+})
+
 // Fetch table data
 const { data, error, refresh } = await useFetch<FetchTableRecordsResult>(
-  () => `/api/tables/${schema}/${tableName}?page=${page.value}&limit=${limit.value}`,
+  () => `/api/tables/${schema}/${tableName}?page=${page.value}&limit=${limit.value}${sortQuery.value}`,
   {
-    watch: [page, limit],
+    watch: [page, limit, sortQuery],
   },
 )
 
-// Watch for route changes and reset pagination
+// Watch for route changes and reset pagination/sort
 watch(() => [route.params.schema, route.params.name], () => {
   page.value = 1
+  sort.value = { column: null, direction: null }
 })
 
 function goBack() {
@@ -41,6 +52,11 @@ function nextPage() {
 function updateLimit(newLimit: number) {
   limit.value = newLimit
   page.value = 1
+}
+
+function updateSort(newSort: SortState) {
+  sort.value = newSort
+  page.value = 1 // Reset to first page when sorting changes
 }
 </script>
 
@@ -87,6 +103,8 @@ function updateLimit(newLimit: number) {
           :columns="data.columns"
           :records="data.records"
           :total-count="data.totalCount"
+          :sort="sort"
+          @update:sort="updateSort"
         />
 
         <Pagination

@@ -98,4 +98,33 @@ describe('GET /api/tables/:schema/:name', async () => {
 
     await pool.query('DROP TABLE test_api_detail.empty_table')
   })
+
+  it('supports sorting by column in ascending order', async () => {
+    const res = await fetch('/api/tables/test_api_detail/paginated_table?page=1&limit=5&sort=id&order=asc')
+    expect(res.status).toBe(200)
+
+    const body = await res.json()
+    expect(body.records).toHaveLength(5)
+    
+    // Records should be sorted by id ascending
+    expect(body.records[0].id).toBeLessThan(body.records[1].id)
+    expect(body.records[1].id).toBeLessThan(body.records[2].id)
+  })
+
+  it('supports sorting by column in descending order', async () => {
+    const res = await fetch('/api/tables/test_api_detail/paginated_table?page=1&limit=5&sort=id&order=desc')
+    expect(res.status).toBe(200)
+
+    const body = await res.json()
+    expect(body.records).toHaveLength(5)
+    
+    // Records should be sorted by id descending
+    expect(body.records[0].id).toBeGreaterThan(body.records[1].id)
+    expect(body.records[1].id).toBeGreaterThan(body.records[2].id)
+  })
+
+  it('returns 400 for invalid sort column', async () => {
+    const res = await fetch('/api/tables/test_api_detail/paginated_table?sort=invalid;column&order=asc')
+    expect(res.status).toBe(400)
+  })
 })
