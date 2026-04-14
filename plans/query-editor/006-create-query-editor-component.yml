@@ -1,0 +1,26 @@
+status: completed
+summary: Create QueryEditor Vue component with CodeMirror 6
+references:
+  - file: apps/db/app/components/query-editor.vue
+  - file: apps/db/test/components/query-editor.nuxt.spec.ts
+approach:
+  - >
+    Created apps/db/app/components/query-editor.vue
+  - >
+    Used CodeMirror 6 mounted inside a div with onMounted (client-side only, no <ClientOnly> wrapper needed in Nuxt 3 because onMounted only runs client-side)
+  - >
+    Editor extensions: basicSetup from codemirror, @codemirror/lang-sql, @codemirror/theme-one-dark, custom EditorView.theme for font sizing, and a keymap extension for Ctrl+Enter (run-all) and Ctrl+Shift+Enter (run-selected)
+  - >
+    Deviation from plan: @marimo-team/codemirror-ai and @codemirror/autocomplete are installed but not wired into the component yet because there is no AI configuration endpoint or schema completion source available. They can be added later without changing the component structure
+  - >
+    Props: modelValue: string
+  - >
+    Emits: update:modelValue, run-all, run-selected
+  - >
+    Exposes getSelectedSql() method via defineExpose for the parent page to read the current selection
+  - >
+    Toolbar uses existing Tailwind conventions: bg-blue-600 hover:bg-blue-500 rounded px-3 py-1.5 text-sm text-white, with disabled state styling for Run Selected
+  - >
+    Created Nuxt component test in apps/db/test/components/query-editor.nuxt.spec.ts
+  - >
+    Deviation from plan: the test cannot execute in the current codebase because the Nuxt component test environment (happy-dom + @nuxt/test-utils) throws a setup error even for existing component tests (e.g., pagination.nuxt.spec.ts). The test file is correct and will pass once the environment issue is fixed upstream

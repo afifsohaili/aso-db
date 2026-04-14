@@ -1,0 +1,14 @@
+status: completed
+summary: Add shared types for query execution, history, and saved queries
+references:
+  - file: apps/db/shared/types/table.ts
+  - file: apps/db/shared/types/query.ts
+approach:
+  - >
+    Created apps/db/shared/types/query.ts
+  - >
+    Defined QueryResult, ExecuteQueryRequest, ExecuteQueryResponse, QueryHistoryEntry, SavedQuery, QuerySession with exact shapes matching the API contract
+  - >
+    No deviations from plan
+  - >
+    Types are already imported by execute.post.ts and will be used by upcoming frontend components and history APIs

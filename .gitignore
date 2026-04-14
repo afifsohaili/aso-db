@@ -21,3 +21,4 @@ logs
 .env.*
 !.env.example
 .data/
+!plans/query-editor

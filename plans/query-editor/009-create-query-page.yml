@@ -1,0 +1,30 @@
+status: todo
+summary: Create /query page and update navigation
+references:
+  - file: apps/db/app/pages/overview.vue
+  - file: apps/db/app/pages/table/[schema]/[name].vue
+  - file: apps/db/app/layouts/default.vue
+  - file: apps/db/test/e2e/navigation.spec.ts
+approach:
+  - >
+    Create apps/db/app/pages/query.vue
+  - >
+    Page layout: full-height flex container with three panes: Left sidebar (QueryHistorySidebar, fixed width ~260px); Center (QueryEditor + action bar); Right/results area (QueryResults)
+  - >
+    State management: sqlContent ref bound to editor (two-way); results ref of type QueryResult[]; loading boolean; Fetch savedQueries and history on mount using useFetch; Fetch session on mount and pre-populate the editor; Auto-save session to PUT /api/query/session on blur or via debounced watch
+  - >
+    Execution flow: runAll() -> POST /api/query/execute with { sql: sqlContent.value }; runSelected() -> same endpoint with selectedSql; On success, append results and refresh history list
+  - >
+    Navigation: Add a header/nav bar to pages/query.vue with links to /overview and /query (or update default.vue if a global nav is preferred). Follow the existing dark aesthetic (bg-gray-900, border-gray-700).
+  - >
+    Write e2e tests in apps/db/test/e2e/query-page.spec.ts that:
+  - >
+    Verify /query loads with a 200 status
+  - >
+    Verify the page contains the editor and results area
+  - >
+    Execute a query and verify results appear
+  - >
+    Save a query from the page and verify it appears in the sidebar
+  - >
+    Follow the existing navigation.spec.ts setup pattern

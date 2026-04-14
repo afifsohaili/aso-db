@@ -1,0 +1,27 @@
+status: completed
+summary: Build query history and saved-queries API endpoints
+references:
+  - file: apps/db/server/api/query/history.get.ts
+  - file: apps/db/server/api/query/history/[id]/star.post.ts
+  - file: apps/db/server/api/query/saved/index.get.ts
+  - file: apps/db/server/api/query/saved/index.post.ts
+  - file: apps/db/server/api/query/saved/[id].put.ts
+  - file: apps/db/server/api/query/saved/[id].delete.ts
+  - file: apps/db/server/api/query/session.get.ts
+  - file: apps/db/server/api/query/session.put.ts
+  - file: apps/db/test/e2e/query-history-crud.spec.ts
+approach:
+  - >
+    Created all endpoints under apps/db/server/api/query/
+  - >
+    history.get.ts returns recent executions ordered by executed_at DESC with optional ?limit= param (default 50, max 200)
+  - >
+    Deviation from plan: star endpoint moved from history/[id].star.post.ts to history/[id]/star.post.ts because Nitro file router does not match the dot-separator pattern correctly
+  - >
+    saved/index.get.ts lists saved queries; saved/index.post.ts creates; saved/[id].put.ts updates; saved/[id].delete.ts deletes (404 when not found)
+  - >
+    session.put.ts uses INSERT ... ON CONFLICT(id) DO UPDATE to maintain the singleton row
+  - >
+    All SQLite operations use useDatabase() with parameterized db.sql tagged templates
+  - >
+    E2e tests in apps/db/test/e2e/query-history-crud.spec.ts cover save, list, update, delete, star, and session read/write; all 7 tests pass

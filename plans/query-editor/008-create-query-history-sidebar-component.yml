@@ -1,0 +1,22 @@
+status: todo
+summary: Create QueryHistorySidebar Vue component
+references:
+  - file: apps/db/app/components/table-grid.vue
+  - file: apps/db/app/pages/overview.vue
+approach:
+  - >
+    Create apps/db/app/components/query-history-sidebar.vue
+  - >
+    Props: savedQueries: SavedQuery[]; history: QueryHistoryEntry[]; activeSavedQueryId?: number
+  - >
+    Emits: load-saved, load-history, star-history, delete-saved, create-new
+  - >
+    Layout: Top section - Saved Queries with a + New button and a list of starred/saved queries. Each item shows the title and has a delete button. Bottom section - Recent History showing the last N executions. Each item shows truncated SQL and execution time. Include a star icon to promote to saved queries.
+  - >
+    Use NuxtLink or plain button elements with existing hover transitions (hover:bg-gray-800)
+  - >
+    Use lucide icons via ~icons/lucide/* (e.g., star, trash-2, clock, plus) consistent with existing icon usage
+  - >
+    The component itself does not fetch data; it receives props from the parent page
+  - >
+    Write a Nuxt component test in apps/db/test/components/query-history-sidebar.nuxt.spec.ts that verifies rendering of saved queries and history, and that clicking items emits the correct events
