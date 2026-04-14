@@ -1,0 +1,31 @@
+status: completed
+summary: Configure build output and distribution for Nuxt 4 CLI
+references:
+  files:
+    - apps/db/package.json
+    - apps/db/nuxt.config.ts
+    - apps/db/bin/asodb.ts
+    - apps/db/bin/asodb.js
+approach:
+  - Updated package.json build scripts
+  - build script runs nuxt build and then CLI bundling
+  - build:cli uses esbuild to bundle bin/asodb.ts to bin/asodb.js
+  - bin entry points to ./bin/asodb.js
+  - files array includes bin, .output, and src/cli for npm publishing
+  - Added esbuild as dev dependency
+  - Nitro preset set to node-server for Node.js deployment
+  - Tested production build and verified CLI runs correctly
+  - Verified server starts on correct port and responds to requests
+  - Added .gitignore for .nuxt/, .output/, dist/
+
+differences_from_plan:
+  - Using esbuild instead of tsup for CLI bundling
+  - Production CLI is spawned via process.execPath (node) with .output/server/index.mjs as entry
+  - Port passed as argument to Nitro server entry in production
+  - Did not implement pkg/nexe single binary (future optimization)
+
+tdd:
+  - No dedicated build tests (build is verified manually and through e2e tests)
+  - Verified: pnpm build completes successfully
+  - Verified: node bin/asodb.js <connection> --port 3002 --no-open launches on port 3002
+  - Verified: curl to localhost:3002/overview returns correctly rendered HTML

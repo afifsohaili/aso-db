@@ -1,0 +1,29 @@
+status: completed
+summary: Update CLI wrapper to launch Nuxt server
+references:
+  files:
+    - apps/db/bin/asodb.ts
+    - apps/db/src/cli/parse-cli-args.ts
+    - apps/db/test/unit/cli/parse-cli-args.spec.ts
+    - apps/db/test/unit/cli/launcher.spec.ts
+approach:
+  - Refactored bin/asodb.ts to spawn Nuxt dev server (for development) or production server (for built output)
+  - Copied parse-cli-args.ts to bin/ directory for bundling
+  - CLI sets NUXT_DATABASE_URL env var before spawning server
+  - Sets PORT and NITRO_PORT env vars for port binding
+  - Server is started with node .output/server/index.mjs <port> in production
+  - Fallback to tsx execution if bin/asodb.ts is run directly in dev environment
+  - SIGINT and SIGTERM properly forwarded to child process
+  - Browser opening support retained (using import('open') when needed)
+  - Added launcher unit tests
+  - Parse CLI args tests migrated and passing (11 tests)
+
+tdd:
+  - Test file: test/unit/cli/parse-cli-args.spec.ts (11 tests passing)
+  - Test parsing connection string (postgresql:// and postgres://)
+  - Test --no-open flag
+  - Test --port flag validation
+  - Test error cases (missing string, invalid string, missing port, invalid port, unknown options, multiple strings)
+  - Test file: test/unit/cli/launcher.spec.ts (2 tests passing)
+  - Test CLI exits with code 1 on missing connection string
+  - Test CLI exits with code 1 on invalid connection string

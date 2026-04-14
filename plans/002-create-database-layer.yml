@@ -1,0 +1,37 @@
+status: completed
+summary: Create database layer in server/utils/ for Nuxt Nitro
+references:
+  files:
+    - apps/db/src/db/list-tables.ts
+    - apps/db/src/db/fetch-table-records.ts
+    - apps/db/src/server/table-info.ts
+    - apps/web/server/api/notifications/index.get.ts
+    - apps/web/server/utils/auth.ts
+approach:
+  - Migrate listTables function from src/db/list-tables.ts to server/utils/tables.ts
+  - Migrate fetchTableRecords function from src/db/fetch-table-records.ts
+  - Update to use pg.Pool instead of creating/closing clients (better for server)
+  - Extract types to shared/types/table.ts for use by both server and client
+  - Exclude system schemas in listTables (information_schema, pg_catalog, pg_toast, pg_temp_*)
+  - Order tables by schema, name for consistent display
+  - fetchTableRecords handles pagination with page and limit params
+  - Returns columns from information_schema for empty tables
+  - Use parameterized queries to prevent SQL injection for pagination params
+  - Table/column identifiers are quoted but validated as valid identifiers
+
+differences_from_plan:
+  - Changed from pg.Client to pg.Pool in functions (better for server routes)
+  - Did not create server/utils/db.ts (Pool is passed as parameter, keeps functions pure)
+  - Types are in shared/types/table.ts not just shared/types/index.ts
+  - Added proper error handling for non-existent tables
+
+tdd:
+  - Test file: test/unit/server/utils/tables.spec.ts (7 tests)
+  - Test listTables returns array of TableInfo with schema and name
+  - Test system schemas are excluded from results
+  - Test tables are ordered by schema, name
+  - Test fetchTableRecords returns records, totalCount, and columns
+  - Test pagination with page and limit works correctly
+  - Test empty tables return columns from information_schema
+  - Test non-existent tables throw error
+  - All tests pass with PostgreSQL test database

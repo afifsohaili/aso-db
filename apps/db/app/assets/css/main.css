@@ -1,0 +1,21 @@
+@import 'tailwindcss';
+
+@plugin '@tailwindcss/typography';
+
+/*
+  Dark theme by default for developer tool aesthetic
+  ASO-DB uses a dark theme similar to VS Code
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-700, currentcolor);
+  }
+}
+
+:root {
+  color-scheme: dark;
+}

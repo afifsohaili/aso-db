@@ -3,26 +3,50 @@
   "version": "0.0.0",
   "type": "module",
   "bin": {
-    "asodb": "./dist/bin/asodb.js"
+    "asodb": "./bin/asodb.js"
   },
   "files": [
-    "dist"
+    "bin",
+    ".output",
+    "src/cli"
   ],
   "scripts": {
-    "build": "tsup bin/asodb.ts --format esm --target node20 --out-dir dist/bin --clean --splitting false",
-    "dev": "tsx bin/asodb.ts",
-    "test": "vitest run"
+    "build": "nuxt build && pnpm build:cli",
+    "build:cli": "esbuild bin/asodb.ts --bundle --platform=node --target=node20 --outfile=bin/asodb.js --format=esm",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "test": "vitest run",
+    "test:watch": "vitest --watch",
+    "test:e2e": "vitest --project e2e"
   },
   "dependencies": {
+    "@tailwindcss/vite": "^4.1.17",
+    "@vueuse/core": "^10.11.1",
+    "@vueuse/nuxt": "^14.0.0",
     "open": "^10.1.2",
-    "pg": "^8.16.3"
+    "pg": "^8.16.3",
+    "radix-vue": "^1.9.17",
+    "tailwindcss": "^4.1.17"
   },
   "devDependencies": {
+    "@antfu/eslint-config": "^6.2.0",
+    "@iconify/json": "^2.2.406",
+    "@nuxt/devtools": "^3.2.1",
+    "@nuxt/test-utils": "^4.0.0",
     "@types/node": "^24.3.0",
-    "@types/pg": "^8.15.5",
-    "tsup": "^8.3.5",
-    "tsx": "^4.19.2",
-    "typescript": "^5.9.2",
-    "vitest": "^3.2.4"
+    "@types/pg": "^8.15.6",
+    "@vue/test-utils": "^2.4.6",
+    "autoprefixer": "^10.4.22",
+    "esbuild": "^0.28.0",
+    "eslint": "^9.0.0",
+    "happy-dom": "^20.0.10",
+    "nuxt": "^4.3.1",
+    "playwright-core": "^1.56.1",
+    "postcss": "^8.5.6",
+    "typescript": "^5.9.3",
+    "unplugin-icons": "^0.16.6",
+    "vitest": "^4.0.9"
   }
 }

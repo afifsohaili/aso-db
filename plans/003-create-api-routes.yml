@@ -1,0 +1,45 @@
+status: completed
+summary: Create Nitro API routes for table operations
+references:
+  files:
+    - apps/web/server/api/notifications/index.get.ts
+    - apps/web/server/api/healthcheck.ts
+    - apps/db/src/server/create-overview-server.ts
+    - apps/web/test/e2e/notifications.get.spec.ts
+    - apps/web/test/e2e/healthcheck.get.spec.ts
+approach:
+  - Create GET /api/tables endpoint returning all tables
+  - Create GET /api/tables/:schema/:name endpoint with pagination
+  - Inline helper functions to avoid Nitro bundling issues
+  - Use pg.Pool for connection management with singleton pattern
+  - Use parameterized queries for pagination (limit, offset)
+  - Validate identifiers with regex to prevent SQL injection
+  - Quote table identifiers in queries (schema.name format)
+  - Return 400 for invalid identifiers, 404 for non-existent tables
+  - Default limit: 50, max limit: 200
+  - Use useRuntimeConfig for databaseUrl
+  - Throw createError for proper HTTP error responses
+
+differences_from_plan:
+  - Inlined listTables and fetchTableRecords into API routes
+  - Nitro had bundling issues with relative imports from server/api/
+  - Shared types still work from shared/types/table.ts
+  - Moved Pool management inline with singleton pattern
+  - Added identifier validation (isValidIdentifier function)
+  - Added table existence check before querying records
+  - Moved files from server/api/ to server/api/tables/ for cleaner structure
+
+tdd:
+  - Test file: test/e2e/tables.get.spec.ts (4 tests)
+  - Test returns 200 with tables array
+  - Test tables contain schema and name properties
+  - Test system schemas excluded from results
+  - Test tables ordered by schema, name
+  - Test file: test/e2e/tables-schema-name.get.spec.ts (6 tests)
+  - Test returns records, totalCount, columns
+  - Test pagination with page and limit params
+  - Test default limit of 50
+  - Test 400 for invalid schema/table names
+  - Test 404 for non-existent tables
+  - Test empty tables return columns from information_schema
+  - All 10 tests pass
