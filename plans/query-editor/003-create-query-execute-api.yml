@@ -1,0 +1,34 @@
+status: completed
+summary: Build POST /api/query/execute endpoint with multi-statement support
+references:
+  - file: apps/db/server/api/tables.get.ts
+  - file: apps/db/server/api/tables/[schema]/[name].get.ts
+  - file: apps/db/server/utils/db.ts
+  - file: apps/db/test/e2e/tables.get.spec.ts
+  - file: apps/db/test/e2e/tables-schema-name.get.spec.ts
+  - file: apps/db/test/unit/server/utils/tables.spec.ts
+  - file: apps/db/server/api/query/execute.post.ts
+  - file: apps/db/test/e2e/query-execute.post.spec.ts
+approach:
+  - >
+    Created apps/db/server/api/query/execute.post.ts
+  - >
+    Used readBody with manual validation (400 on missing/empty sql)
+  - >
+    Used node-sql-parser (imported as default CJS package) with database: Postgresql to split sql into individual statements; fallback to single statement on parse error
+  - >
+    If selectedSql is provided, run only that snippet; otherwise run all statements sequentially
+  - >
+    Used a single pg client (pool.connect()) for the entire batch so session-scoped operations and transaction semantics are preserved across statements
+  - >
+    For each statement, measured durationMs with performance.now(), captured columns from result.fields, rows, and rowCount from result.rowCount
+  - >
+    On error for a single statement, continued execution and returned the error in that result slot; only parsing/validation failures return non-200
+  - >
+    Persisted each execution to query_history SQLite table via useDatabase()
+  - >
+    Returned ExecuteQueryResponse { results: QueryResult[] }
+  - >
+    Created e2e tests in apps/db/test/e2e/query-execute.post.spec.ts covering single SELECT, multiple SELECTs, mixed DML/SELECT, selectedSql, syntax error capture, continuation after failure, and 400 on empty input
+  - >
+    Deviation from plan: used pool.connect()/client.release() instead of getPool().query() to ensure multi-statement execution shares a single database session

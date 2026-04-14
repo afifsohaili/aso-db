@@ -1,0 +1,11 @@
+status: completed
+summary: Add CodeMirror 6, node-sql-parser, and AI extension dependencies
+references:
+  - file: apps/db/package.json
+approach:
+  - >
+    Added dependencies via pnpm --filter asodb add: codemirror, @codemirror/lang-sql, @codemirror/autocomplete, @codemirror/view, @codemirror/state, @codemirror/theme-one-dark, @marimo-team/codemirror-ai, node-sql-parser
+  - >
+    Lockfile updated successfully
+  - >
+    No deviations from plan

@@ -1,0 +1,24 @@
+status: completed
+summary: Enable Nitro experimental database layer and create SQLite metadata schema
+references:
+  - file: apps/db/nuxt.config.ts
+  - file: apps/db/package.json
+  - file: apps/db/server/utils/query-db.ts
+  - file: apps/db/server/plugins/query-db-migrate.ts
+  - file: apps/db/server/api/query/session.get.ts
+  - file: apps/db/test/e2e/query-db-migrate.spec.ts
+approach:
+  - >
+    Enabled experimental.database: true under the nitro key in nuxt.config.ts
+  - >
+    Used Nitro built-in useDatabase() (auto-imported) for SQLite access; no extra package needed for Node 22+
+  - >
+    Created server/utils/query-db.ts with migrateQueryDatabase() using db.exec() for DDL
+  - >
+    Created server/plugins/query-db-migrate.ts as an async defineNitroPlugin (direct async execution works better than ready hook in test mode)
+  - >
+    SQLite schema creates saved_queries, query_history, query_sessions with id=1 CHECK constraint
+  - >
+    Deviation from plan: test moved to e2e instead of unit because useDatabase() requires Nitro runtime. Created a minimal session.get.ts endpoint to verify migrations.
+  - >
+    E2e test in test/e2e/query-db-migrate.spec.ts verifies query_sessions table exists and returns default empty session
