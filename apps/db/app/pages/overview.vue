@@ -28,7 +28,27 @@ function onTableSelect(table: TableInfo) {
 
 <template>
   <div class="min-h-screen bg-gray-950">
-    <div class="max-w-7xl mx-auto px-4 py-8">
+    <header class="flex items-center justify-between px-4 py-3 border-b border-gray-700 bg-gray-900 mb-6">
+      <div class="flex items-center gap-4">
+        <span class="text-lg font-semibold text-white">ASO-DB</span>
+        <nav class="flex items-center gap-2">
+          <NuxtLink
+            to="/overview"
+            class="px-3 py-1.5 text-sm rounded bg-gray-800 text-white"
+          >
+            Overview
+          </NuxtLink>
+          <NuxtLink
+            to="/query"
+            class="px-3 py-1.5 text-sm rounded hover:bg-gray-800 text-gray-300 hover:text-white transition-colors"
+          >
+            Query
+          </NuxtLink>
+        </nav>
+      </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-4 py-4">
       <!-- Header -->
       <div class="mb-8">
         <h1 class="text-3xl font-bold text-white mb-2">Database Overview</h1>

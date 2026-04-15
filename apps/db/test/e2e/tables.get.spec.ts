@@ -1,6 +1,7 @@
 import { Pool } from 'pg'
 import { describe, expect, it, beforeAll, afterAll } from 'vitest'
-import { fetch, setup } from '@nuxt/test-utils/e2e'
+import { fetch } from '@nuxt/test-utils/e2e'
+import { setupE2E } from './utils'
 
 describe('GET /api/tables', async () => {
   // Setup test database
@@ -28,14 +29,7 @@ describe('GET /api/tables', async () => {
     await pool.end()
   })
 
-  await setup({
-    host: process.env.TEST_HOST,
-    nuxtConfig: {
-      runtimeConfig: {
-        databaseUrl: process.env.TEST_DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/asodb_test',
-      },
-    },
-  })
+  await setupE2E()
 
   it('returns 200 with tables array', async () => {
     const res = await fetch('/api/tables')

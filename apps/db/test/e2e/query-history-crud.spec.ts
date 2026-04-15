@@ -1,5 +1,6 @@
 import { beforeAll, afterAll, describe, expect, it } from 'vitest'
-import { $fetch, setup } from '@nuxt/test-utils/e2e'
+import { $fetch } from '@nuxt/test-utils/e2e'
+import { setupE2E } from './utils'
 import pg from 'pg'
 
 describe('Query history and saved queries APIs', async () => {
@@ -7,14 +8,7 @@ describe('Query history and saved queries APIs', async () => {
     connectionString: process.env.TEST_DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/asodb_test',
   })
 
-  await setup({
-    host: process.env.TEST_HOST,
-    nuxtConfig: {
-      runtimeConfig: {
-        databaseUrl: process.env.TEST_DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/asodb_test',
-      },
-    },
-  })
+  await setupE2E()
 
   beforeAll(async () => {
     await pool.query(`
@@ -89,7 +83,9 @@ describe('Query history and saved queries APIs', async () => {
     const history = await $fetch('/api/query/history')
     expect(history.history.length).toBeGreaterThan(0)
 
-    const entry = history.history[0]
+    const entry = history.history.find((h: any) => h.sqlContent.includes('SELECT 999'))
+    expect(entry).toBeDefined()
+
     const starred = await $fetch(`/api/query/history/${entry.id}/star`, { method: 'POST' })
 
     expect(starred.savedQuery.title).toContain('SELECT 999')

@@ -1,6 +1,8 @@
 export async function migrateQueryDatabase() {
   const db = useDatabase()
 
+  await db.exec(`PRAGMA journal_mode = WAL;`)
+
   await db.exec(`
     CREATE TABLE IF NOT EXISTS saved_queries (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -22,3 +22,5 @@ logs
 !.env.example
 .data/
 !plans/query-editor
+!plans/shacdn
+!plans/readonly

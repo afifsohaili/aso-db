@@ -26,16 +26,6 @@ function createState(doc: string) {
   return EditorState.create({
     doc,
     extensions: [
-      basicSetup,
-      sql(),
-      oneDark,
-      EditorView.updateListener.of((update) => {
-        if (update.docChanged) {
-          emit('update:modelValue', update.state.doc.toString())
-        }
-        const sel = update.state.selection.main
-        hasSelection.value = sel.from !== sel.to
-      }),
       keymap.of([
         {
           key: 'Mod-Enter',
@@ -54,6 +44,16 @@ function createState(doc: string) {
           },
         },
       ]),
+      basicSetup,
+      sql(),
+      oneDark,
+      EditorView.updateListener.of((update) => {
+        if (update.docChanged) {
+          emit('update:modelValue', update.state.doc.toString())
+        }
+        const sel = update.state.selection.main
+        hasSelection.value = sel.from !== sel.to
+      }),
       EditorView.theme({
         '&': {
           fontSize: '14px',
@@ -129,7 +129,7 @@ const runSelectedDisabled = computed(() => !hasSelection.value)
         Run Selected
       </button>
       <span class="ml-auto text-xs text-gray-400">
-        Ctrl+Enter to run · Ctrl+Shift+Enter for selection
+        Cmd+Enter to run · Cmd+Shift+Enter for selection
       </span>
     </div>
     <div ref="editorRef" class="flex-1 min-h-0 bg-gray-950">

@@ -1,15 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { fetch, setup } from '@nuxt/test-utils/e2e'
+import { fetch } from '@nuxt/test-utils/e2e'
+import { setupE2E } from './utils'
 
 describe('query database migrations', async () => {
-  await setup({
-    host: process.env.TEST_HOST,
-    nuxtConfig: {
-      runtimeConfig: {
-        databaseUrl: process.env.TEST_DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/asodb_test',
-      },
-    },
-  })
+  await setupE2E()
 
   it('creates query_sessions table and returns default session', async () => {
     const res = await fetch('/api/query/session')

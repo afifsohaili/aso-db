@@ -1,5 +1,6 @@
 import { beforeAll, afterAll, describe, expect, it } from 'vitest'
-import { $fetch, setup } from '@nuxt/test-utils/e2e'
+import { $fetch } from '@nuxt/test-utils/e2e'
+import { setupE2E } from './utils'
 import pg from 'pg'
 
 describe('POST /api/query/execute', async () => {
@@ -7,14 +8,7 @@ describe('POST /api/query/execute', async () => {
     connectionString: process.env.TEST_DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/asodb_test',
   })
 
-  await setup({
-    host: process.env.TEST_HOST,
-    nuxtConfig: {
-      runtimeConfig: {
-        databaseUrl: process.env.TEST_DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/asodb_test',
-      },
-    },
-  })
+  await setupE2E()
 
   beforeAll(async () => {
     await pool.query(`
