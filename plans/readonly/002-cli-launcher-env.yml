@@ -1,0 +1,12 @@
+status: done
+summary: Pass `--allow-write` from CLI launcher to server environment
+references:
+  - files:
+    - apps/db/bin/asodb.ts
+    - apps/db/src/cli/parse-cli-args.ts
+    - apps/db/nuxt.config.ts
+approach:
+  - Import `ParsedCliArgs` with the new `allowWrite` field.
+  - Inject `NUXT_ALLOW_WRITE: String(args.allowWrite)` into the spawned server process env in `asodb.ts`.
+  - Add `allowWrite: ''` (or boolean) to `runtimeConfig` in `nuxt.config.ts` so the server can read it via `useRuntimeConfig()`.
+  - Keep existing env-spawning pattern consistent with `NUXT_DATABASE_URL` and `PORT`.

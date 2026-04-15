@@ -1,0 +1,13 @@
+status: done
+summary: Enforce Postgres read-only at connection level
+references:
+  - files:
+    - apps/db/server/utils/db.ts
+    - apps/db/server/api/tables.get.ts
+    - apps/db/server/api/tables/[schema]/[name].get.ts
+    - apps/db/nuxt.config.ts
+approach:
+  - In `server/utils/db.ts`, read `useRuntimeConfig().allowWrite` when constructing the Pool.
+  - If `allowWrite` is falsy, pass `options: "-c default_transaction_read_only=on"` to the Pool constructor.
+  - Refactor duplicate `getPool()` implementations in `tables.get.ts` and `tables/[schema]/[name].get.ts` to import from `../../utils/db.ts` instead.
+  - This provides the second layer of accidental protection.

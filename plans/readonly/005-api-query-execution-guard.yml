@@ -1,0 +1,22 @@
+status: done
+summary: Add app-level keyword guard to query execution API
+references:
+  - files:
+    - apps/db/server/api/query/execute.post.ts
+    - apps/db/shared/types/query.ts
+    - apps/db/test/e2e/query-execute.post.spec.ts
+    - apps/db/test/e2e/utils.ts
+approach:
+  - Implement a helper to strip leading comments/whitespace and extract the first keyword.
+  - Blocklist keywords: INSERT, UPDATE, DELETE, TRUNCATE, MERGE, CREATE, ALTER, DROP, GRANT, REVOKE, COPY, CALL.
+  - Also block `EXPLAIN ANALYZE` specifically; plain `EXPLAIN` is allowed.
+  - In read-only mode, before executing any statement, return a 403 (or friendly error in result) if a blocked keyword is detected.
+  - For v1 UX, return the error inside the `QueryResult` array (like syntax errors) rather than HTTP 403, so the UI displays it cleanly. Alternatively, use HTTP 403 if that's cleaner for the frontend.
+  - Add e2e tests in a new file `test/e2e/query-execute-readonly.post.spec.ts` testing:
+    - INSERT blocked in default (read-only) mode
+    - UPDATE, DELETE, CREATE, DROP blocked
+    - EXPLAIN ANALYZE blocked
+    - plain EXPLAIN allowed
+    - SELECT allowed
+    - When server is launched with `allowWrite: true`, write queries succeed
+  - Use `setupE2E` with overridden `runtimeConfig` for the write-enabled test variant.

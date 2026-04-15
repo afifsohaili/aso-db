@@ -8,6 +8,7 @@ import { oneDark } from '@codemirror/theme-one-dark'
 
 interface Props {
   modelValue: string
+  readOnly?: boolean
 }
 
 const props = defineProps<Props>()
@@ -128,7 +129,16 @@ const runSelectedDisabled = computed(() => !hasSelection.value)
       >
         Run Selected
       </button>
-      <span class="ml-auto text-xs text-gray-400">
+      <span
+        v-if="props.readOnly"
+        class="ml-auto px-2 py-0.5 text-xs font-medium text-gray-300 bg-gray-800 rounded"
+      >
+        Read-Only
+      </span>
+      <span v-else class="ml-auto px-2 py-0.5 text-xs font-medium text-white bg-red-600 rounded">
+        Write Mode
+      </span>
+      <span class="text-xs text-gray-400">
         Cmd+Enter to run · Cmd+Shift+Enter for selection
       </span>
     </div>

@@ -66,6 +66,9 @@ npx asodb postgresql://user:pass@localhost:5432/dbname
 
 # Optional port override
 npx asodb --port 3333
+
+# Allow write queries (default is read-only)
+npx asodb --allow-write
 ```
 
 ### Environment Auto-Detection
@@ -118,7 +121,10 @@ ASO-DB should prefer env-based startup in v1.
 
 ### Security & Safety
 - [ ] Enforce single-statement execution in v1
-- [ ] Query permissions follow the PostgreSQL user used at launch; v1 adds no app-level readonly layer
+- [ ] **Read-only by default**; `--allow-write` CLI flag is required to enable mutating queries
+- [ ] App-level query guardrails: block `INSERT`, `UPDATE`, `DELETE`, `CREATE`, `ALTER`, `DROP`, `TRUNCATE` (and related mutating keywords) unless in write mode
+- [ ] Postgres connection uses `default_transaction_read_only=on` in read-only mode as a second layer of accidental protection
+- [ ] Visual write-mode warning: fixed red border around the entire page when not in read-only mode
 - [ ] Only binds to localhost (`127.0.0.1`)
 - [ ] Never send schema/query text to AI unless the user explicitly uses an AI feature
 - [ ] Auto-detect common env files and common PostgreSQL env conventions across popular frameworks
@@ -247,6 +253,7 @@ interface CliArgs {
   connection?: string     // Full PostgreSQL connection string
   port?: number           // Server port (random if not specified)
   'no-open'?: boolean     // Don't auto-open browser
+  'allow-write'?: boolean // Disable read-only protections (default: false)
   'ai-provider'?: string  // Default AI provider
   'ai-model'?: string     // Default AI model
 }
@@ -356,7 +363,6 @@ interface CliArgs {
 - [ ] SSH tunneling
 - [ ] Data visualization / charts
 - [ ] Ghost text inline suggestions
-- [ ] App-level readonly / destructive-query guardrails
 - [ ] Connection profiles
 - [ ] Localhost API origin/session protections
 - [ ] Large-result optimizations beyond full fetch
@@ -414,5 +420,5 @@ Post-MVP:
 ---
 
 **Status:** Revised planning draft - aligned with current v1 decisions
-**Last Updated:** 2026-04-09
+**Last Updated:** 2026-04-15
 **Next Step:** Begin Phase 1 when approved; refine post-v1 features as implementation evolves

@@ -1,6 +1,7 @@
 export interface ParsedCliArgs {
   connectionString: string
   openBrowser: boolean
+  allowWrite: boolean
   port?: number
 }
 
@@ -11,6 +12,7 @@ function isPostgresConnectionString(value: string) {
 export function parseCliArgs(argv: string[]): ParsedCliArgs {
   let connectionString: string | undefined
   let openBrowser = true
+  let allowWrite = false
   let port: number | undefined
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -18,6 +20,11 @@ export function parseCliArgs(argv: string[]): ParsedCliArgs {
 
     if (current === '--no-open') {
       openBrowser = false
+      continue
+    }
+
+    if (current === '--allow-write') {
+      allowWrite = true
       continue
     }
 
@@ -55,6 +62,7 @@ export function parseCliArgs(argv: string[]): ParsedCliArgs {
   return {
     connectionString,
     openBrowser,
+    allowWrite,
     port,
   }
 }

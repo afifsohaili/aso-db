@@ -1,0 +1,13 @@
+status: done
+summary: Add write-mode warning UI and read-only indicator to frontend
+references:
+  - files:
+    - apps/db/app/pages/query.vue
+    - apps/db/app/components/query-editor.vue
+    - apps/db/app/components/query-results.vue
+approach:
+  - Fetch read-only state from `/api/config.get.ts` in `query.vue`.
+  - When `isReadOnly === false` (i.e., `--allow-write` was passed), render a fixed red border overlay around the entire page using Tailwind (e.g. `fixed inset-0 border-4 border-red-500 pointer-events-none z-50`).
+  - Add a small indicator in the header or editor toolbar showing "Read-only" or "Write mode enabled" text.
+  - Optionally disable Run buttons or show a warning tooltip when in write mode (decision: keep buttons enabled, just warn visually).
+  - Follow existing Tailwind classes and Vue 3 `<script setup>` conventions.

@@ -20,6 +20,17 @@ describe('parseCliArgs', () => {
     expect(result.openBrowser).toBe(false)
   })
 
+  it('defaults allowWrite to false', () => {
+    const result = parseCliArgs(['postgresql://user:pass@localhost:5432/db'])
+    expect(result.allowWrite).toBe(false)
+  })
+
+  it('parses --allow-write flag', () => {
+    const result = parseCliArgs(['--allow-write', 'postgresql://user:pass@localhost:5432/db'])
+    expect(result.connectionString).toBe('postgresql://user:pass@localhost:5432/db')
+    expect(result.allowWrite).toBe(true)
+  })
+
   it('parses --port flag', () => {
     const result = parseCliArgs(['--port', '3333', 'postgresql://user:pass@localhost:5432/db'])
     expect(result.connectionString).toBe('postgresql://user:pass@localhost:5432/db')

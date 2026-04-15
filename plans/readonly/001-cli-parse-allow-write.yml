@@ -1,0 +1,11 @@
+status: done
+summary: Add `--allow-write` flag to CLI argument parser
+references:
+  - files:
+    - apps/db/src/cli/parse-cli-args.ts
+    - apps/db/test/unit/cli/parse-cli-args.spec.ts
+approach:
+  - Add `allowWrite: boolean` to `ParsedCliArgs` interface (default false).
+  - Parse `--allow-write` flag in the argv loop (similar to `--no-open`).
+  - Update unit tests in `parse-cli-args.spec.ts` to cover the new flag.
+  - Follow existing code style (manual for-loop over argv, explicit throws for unknown flags).

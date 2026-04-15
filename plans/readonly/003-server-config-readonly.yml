@@ -1,0 +1,12 @@
+status: done
+summary: Add server runtime config and expose read-only state to API/client
+references:
+  - files:
+    - apps/db/nuxt.config.ts
+    - apps/db/server/api/query/execute.post.ts
+    - apps/db/shared/types/query.ts
+approach:
+  - Add `allowWrite` to `runtimeConfig` in `nuxt.config.ts` (server-only).
+  - Consider adding a lightweight `public.isReadOnly` boolean to `runtimeConfig` if the client needs it at hydration time, otherwise create `/api/config.get.ts` endpoint.
+  - Update shared types if adding a new config response type.
+  - Decision: use a `/api/config.get.ts` endpoint to keep runtimeConfig server-only and return `{ isReadOnly: boolean }`.

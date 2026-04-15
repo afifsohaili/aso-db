@@ -8,7 +8,24 @@ describe('POST /api/query/execute', async () => {
     connectionString: process.env.TEST_DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/asodb_test',
   })
 
-  await setupE2E()
+  await setupE2E({
+    nuxtConfig: {
+      runtimeConfig: {
+        databaseUrl: process.env.TEST_DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/asodb_test',
+        public: {
+          isReadOnly: false,
+        },
+      },
+      nitro: {
+        database: {
+          default: {
+            connector: 'sqlite',
+            options: { name: ':memory:' },
+          },
+        },
+      },
+    },
+  })
 
   beforeAll(async () => {
     await pool.query(`

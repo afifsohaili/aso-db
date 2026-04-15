@@ -512,11 +512,16 @@ function isPostgresConnectionString(value) {
 function parseCliArgs(argv) {
   let connectionString;
   let openBrowser = true;
+  let allowWrite = false;
   let port;
   for (let index = 0; index < argv.length; index += 1) {
     const current = argv[index];
     if (current === "--no-open") {
       openBrowser = false;
+      continue;
+    }
+    if (current === "--allow-write") {
+      allowWrite = true;
       continue;
     }
     if (current === "--port") {
@@ -543,6 +548,7 @@ function parseCliArgs(argv) {
   return {
     connectionString,
     openBrowser,
+    allowWrite,
     port
   };
 }
@@ -590,6 +596,7 @@ async function main() {
     env: {
       ...process.env,
       NUXT_DATABASE_URL: args.connectionString,
+      NUXT_PUBLIC_IS_READ_ONLY: String(!args.allowWrite),
       PORT: String(port),
       NITRO_PORT: String(port)
     },

@@ -1,26 +1,10 @@
-import { Pool } from 'pg'
+import type { Pool } from 'pg'
+import { getPool } from '../../../utils/db'
 import type { FetchTableRecordsOptions, FetchTableRecordsResult } from '../../../../shared/types/table'
 
 export interface FetchOptions extends FetchTableRecordsOptions {
   sort?: string | null
   order?: 'asc' | 'desc' | null
-}
-
-// Create a single Pool instance for the application
-let pool: Pool | null = null
-
-function getPool(): Pool {
-  if (!pool) {
-    const config = useRuntimeConfig()
-    if (!config.databaseUrl) {
-      throw createError({
-        statusCode: 500,
-        statusMessage: 'Database URL not configured. Set NUXT_DATABASE_URL environment variable.',
-      })
-    }
-    pool = new Pool({ connectionString: config.databaseUrl })
-  }
-  return pool
 }
 
 // Validate identifier to prevent SQL injection

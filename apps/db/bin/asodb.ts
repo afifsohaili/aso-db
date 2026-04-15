@@ -72,6 +72,7 @@ async function main() {
     env: {
       ...process.env,
       NUXT_DATABASE_URL: args.connectionString,
+      NUXT_PUBLIC_IS_READ_ONLY: String(!args.allowWrite),
       PORT: String(port),
       NITRO_PORT: String(port),
     },

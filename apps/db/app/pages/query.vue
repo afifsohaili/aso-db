@@ -29,6 +29,10 @@ const resultsWidthPercent = ref(33)
 const minResultsWidth = 20
 const maxResultsWidth = 75
 
+// Read-only state
+const { public: publicConfig } = useRuntimeConfig()
+const isReadOnly = computed(() => publicConfig.isReadOnly !== false)
+
 // Auto-save session
 const saveSession = useDebounceFn(async (value: string) => {
   await $fetch('/api/query/session', {
@@ -150,6 +154,13 @@ const resultsStyleWidth = computed(() => {
 
 <template>
   <div class="min-h-screen bg-gray-950 flex flex-col">
+    <!-- Write mode warning overlay -->
+    <div
+      v-if="!isReadOnly"
+      class="fixed inset-0 border-4 border-red-500 pointer-events-none z-50"
+      aria-hidden="true"
+    />
+
     <!-- Header -->
     <header class="flex items-center justify-between px-4 py-3 border-b border-gray-700 bg-gray-900">
       <div class="flex items-center gap-4">
@@ -168,6 +179,20 @@ const resultsStyleWidth = computed(() => {
             Query
           </NuxtLink>
         </nav>
+      </div>
+      <div class="flex items-center gap-2">
+        <span
+          v-if="isReadOnly"
+          class="px-2 py-0.5 text-xs font-medium text-gray-300 bg-gray-800 rounded"
+        >
+          Read-Only
+        </span>
+        <span
+          v-else
+          class="px-2 py-0.5 text-xs font-medium text-white bg-red-600 rounded"
+        >
+          Write Mode Enabled
+        </span>
       </div>
     </header>
 
@@ -215,6 +240,7 @@ const resultsStyleWidth = computed(() => {
         <QueryEditor
           ref="editorRef"
           v-model="sqlContent"
+          :read-only="isReadOnly"
           @run-all="runAll"
           @run-selected="runSelected"
         />

@@ -13,7 +13,10 @@ export function getPool(): Pool {
         statusMessage: 'Database URL not configured. Set NUXT_DATABASE_URL environment variable.',
       })
     }
-    pool = new Pool({ connectionString: config.databaseUrl })
+    pool = new Pool({
+      connectionString: config.databaseUrl,
+      ...(config.public.isReadOnly ? { options: '-c default_transaction_read_only=on' } : {}),
+    })
   }
   return pool
 }

@@ -21,6 +21,9 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     databaseUrl: '', // Server-only, set via NUXT_DATABASE_URL env var
+    public: {
+      isReadOnly: true, // Overridden via NUXT_PUBLIC_IS_READ_ONLY; false when --allow-write is passed
+    },
   },
   nitro: {
     preset: 'node-server',
