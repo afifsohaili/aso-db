@@ -5,6 +5,7 @@ import type { QueryResult, SavedQuery, QueryHistoryEntry, QuerySession } from '~
 import QueryEditor from '~/components/query-editor.vue'
 import QueryHistorySidebar from '~/components/query-history-sidebar.vue'
 import QueryResults from '~/components/query-results.vue'
+import InfoIcon from '~icons/heroicons/information-circle'
 
 // Session
 const { data: sessionData } = await useFetch<{ session: QuerySession }>('/api/query/session')
@@ -32,6 +33,10 @@ const maxResultsWidth = 75
 // Read-only state
 const { public: publicConfig } = useRuntimeConfig()
 const isReadOnly = computed(() => publicConfig.isReadOnly !== false)
+
+// Connection info
+const { data: configData } = await useFetch<{ databaseUrl: string; isReadOnly: boolean }>('/api/config')
+const showConnectionInfo = ref(false)
 
 // Auto-save session
 const saveSession = useDebounceFn(async (value: string) => {
@@ -180,7 +185,7 @@ const resultsStyleWidth = computed(() => {
           </NuxtLink>
         </nav>
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 relative">
         <span
           v-if="isReadOnly"
           class="px-2 py-0.5 text-xs font-medium text-gray-300 bg-gray-800 rounded"
@@ -193,6 +198,20 @@ const resultsStyleWidth = computed(() => {
         >
           Write Mode Enabled
         </span>
+        <button
+          class="p-1 rounded hover:bg-gray-800 text-gray-400 hover:text-white"
+          title="Show connection info"
+          @click="showConnectionInfo = !showConnectionInfo"
+        >
+          <InfoIcon class="h-5 w-5" />
+        </button>
+        <div
+          v-if="showConnectionInfo"
+          class="absolute right-0 top-full mt-2 w-80 px-3 py-2 text-xs text-gray-200 bg-gray-800 border border-gray-700 rounded shadow-lg z-50"
+        >
+          <div class="font-medium text-gray-400 mb-1">Database URL</div>
+          <div class="break-all font-mono text-gray-300">{{ configData?.databaseUrl || 'Not configured' }}</div>
+        </div>
       </div>
     </header>
 
