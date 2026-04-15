@@ -4,6 +4,17 @@ import type { TableInfo } from '../../../shared/types/table'
 // Create a single Pool instance for the application
 let pool: Pool | null = null
 
+function isLocalhost(url: string): boolean {
+  try {
+    const parsed = new URL(url)
+    const hostname = parsed.hostname.toLowerCase()
+    return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1'
+  }
+  catch {
+    return false
+  }
+}
+
 export function getPool(): Pool {
   if (!pool) {
     const config = useRuntimeConfig()
@@ -13,8 +24,10 @@ export function getPool(): Pool {
         statusMessage: 'Database URL not configured. Set NUXT_DATABASE_URL environment variable.',
       })
     }
+    const useSsl = !isLocalhost(config.databaseUrl)
     pool = new Pool({
       connectionString: config.databaseUrl,
+      ...(useSsl ? { ssl: { rejectUnauthorized: false } } : {}),
       ...(config.public.isReadOnly ? { options: '-c default_transaction_read_only=on' } : {}),
     })
   }
