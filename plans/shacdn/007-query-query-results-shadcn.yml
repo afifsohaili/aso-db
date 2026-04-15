@@ -1,0 +1,32 @@
+status: todo
+summary: Migrate QueryResults component to shadcn Card, Alert, and Skeleton on /query page
+references:
+  - files:
+    - apps/db/app/components/query-results.vue
+    - apps/db/test/components/query-results.nuxt.spec.ts
+    - apps/db/app/components/table-detail.vue
+approach:
+  - Replace custom loading/empty/error/success containers with UiCard and UiAlert.
+  - Use UiSkeleton for the loading state.
+  - Keep TableDetail embedded inside the success UiCard.
+  - Remove all hard-coded gray and red background/border classes.
+  - Update tests to assert on visible text and component presence instead of Tailwind classes.
+
+llm_instruction: |
+  Rewrite `apps/db/app/components/query-results.vue` using shadcn `UiCard`, `UiAlert`, and `UiSkeleton`.
+
+  1. Install shadcn components in `apps/db`: `pnpm dlx shadcn-vue@latest add card alert skeleton`.
+  2. **Loading state:** Render a `UiCard` containing multiple `UiSkeleton` rows (`class="h-4 w-full"`).
+  3. **Empty state:** Render a `UiCard` with muted text like "Run a query to see results".
+  4. **Error state:** Render `UiAlert` `variant="destructive"` showing the error title and message.
+  5. **Success state:** Render a `UiCard` with a `UiCardHeader` showing row count, duration, and truncated SQL. Inside `UiCardContent`, render `TableDetail`.
+  6. Remove all hard-coded `bg-gray-900`, `border-gray-700`, `bg-red-900/20`, `border-red-700` classes.
+  7. Keep props (`results`, `loading`, `error`, `sql`, `duration`) as they currently exist.
+
+  TDD:
+  - Update `apps/db/test/components/query-results.nuxt.spec.ts`:
+    - Assert loading state by checking for `UiSkeleton` elements.
+    - Assert empty state by visible text ("Run a query..." or similar).
+    - Assert error state by `UiAlert` presence and error text.
+    - Assert success state by checking that `TableDetail` is rendered (via `data-testid="table-detail"` or column headers).
+  - Run `vitest run test/components/query-results.nuxt.spec.ts` until green.

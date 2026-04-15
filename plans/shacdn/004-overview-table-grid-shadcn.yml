@@ -1,0 +1,33 @@
+status: done
+summary: Migrate TableGrid component to shadcn Card on /overview page
+references:
+  - files:
+    - apps/db/app/components/table-grid.vue
+    - apps/db/test/components/table-grid.nuxt.spec.ts
+    - apps/db/app/pages/overview.vue
+approach:
+  - Replace custom card divs with UiCard, UiCardHeader, and UiCardTitle.
+  - Remove hard-coded bg-gray-900, border-gray-700, hover:border-gray-500 classes.
+  - Keep the grid layout and NuxtLink behavior intact.
+  - Update tests to assert on UiCard structure instead of Tailwind class names.
+
+llm_instruction: |
+  Rewrite `apps/db/app/components/table-grid.vue` using shadcn `UiCard` for the `/overview` page.
+
+  1. Install shadcn component in `apps/db`: `pnpm dlx shadcn-vue@latest add card`.
+  2. **Grid container:**
+     - Keep the outer `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4` layout.
+     - Remove `bg-gray-900 border border-gray-700 rounded-lg` from the container.
+  3. **Table cards:**
+     - Replace the inner card `div` with `UiCard`.
+     - Use `UiCardHeader` with `UiCardTitle` for the `schema.name` text.
+     - Wrap the card in `NuxtLink` or place a `NuxtLink` inside.
+  4. Remove all hard-coded gray border/hover/background classes.
+  5. Keep the `tables` prop and `TableInfo` type usage.
+
+  TDD:
+  - Update `apps/db/test/components/table-grid.nuxt.spec.ts`:
+    - Replace `html.includes('bg-gray-800')` with `wrapper.findAllComponents(UiCard).length` assertion.
+    - Assert each `UiCardTitle` contains the expected `schema.name`.
+    - Retain assertions for `NuxtLink` `to` attributes.
+  - Run `vitest run test/components/table-grid.nuxt.spec.ts` until green.

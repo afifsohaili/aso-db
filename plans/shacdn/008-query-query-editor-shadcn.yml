@@ -1,0 +1,40 @@
+status: todo
+summary: Migrate QueryEditor chrome to shadcn Card, Button, Badge, Separator, and Tooltip on /query page
+references:
+  - files:
+    - apps/db/app/components/query-editor.vue
+    - apps/db/test/components/query-editor.nuxt.spec.ts
+approach:
+  - Keep the CodeMirror 6 editor surface exactly as-is.
+  - Wrap the editor and toolbar in a UiCard.
+  - Replace toolbar buttons with UiButton + UiTooltip.
+  - Replace read-only/write badges with UiBadge.
+  - Use UiSeparator between toolbar sections.
+  - Remove hard-coded bg-blue-600, bg-gray-800, bg-red-600, and bg-gray-950 classes.
+  - Update tests to find buttons and badges by component text/attributes.
+
+llm_instruction: |
+  Rewrite the chrome/shell of `apps/db/app/components/query-editor.vue` using shadcn components while keeping CodeMirror 6 untouched.
+
+  1. Install shadcn components in `apps/db`: `pnpm dlx shadcn-vue@latest add card button badge separator tooltip`.
+  2. Wrap the component in a `UiCard`:
+     - `UiCardHeader` for the toolbar.
+     - `UiCardContent` for the CodeMirror container.
+  3. **Toolbar buttons:**
+     - "Run All" and "Run Selected" become `UiButton`.
+     - Wrap each in `UiTooltip`.
+     - Use `PlayIcon` / `~icons/lucide/play` inside the buttons.
+  4. **Badges:**
+     - Replace custom read-only and write-mode badges with `UiBadge`.
+     - Use `variant="secondary"` for read-only and `variant="destructive"` for write-mode.
+  5. **Separator:** Add `UiSeparator` between the run buttons and the status badges.
+  6. Remove all hard-coded Tailwind color classes.
+  7. Keep props (`modelValue`, `loading`, `readOnly`) and emits (`update:modelValue`, `run-all`, `run-selected`).
+
+  TDD:
+  - Update `apps/db/test/components/query-editor.nuxt.spec.ts`:
+    - Find "Run All" and "Run Selected" by querying `UiButton` components.
+    - Assert read-only badge appears as `UiBadge` with text "Read-only" when `readOnly` is true.
+    - Assert write-mode badge appears as `UiBadge` with text "Write mode" when `readOnly` is false.
+    - Retain assertions for click events and `update:modelValue`.
+  - Run `vitest run test/components/query-editor.nuxt.spec.ts` until green.

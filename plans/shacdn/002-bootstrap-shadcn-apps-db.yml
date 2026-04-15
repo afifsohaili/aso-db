@@ -1,0 +1,35 @@
+status: done
+summary: Bootstrap shadcn-vue in apps/db with reka-nova preset
+references:
+  - files:
+    - apps/db/nuxt.config.ts
+    - apps/db/package.json
+    - apps/db/app/assets/css/main.css
+    - apps/db/app/app.vue
+approach:
+  - Install shadcn-nuxt module and register it in nuxt.config.ts.
+  - Run shadcn-vue init with --preset reka-nova to generate components.json and base theme CSS.
+  - Remove hard-coded :root color-scheme: dark from main.css.
+  - Run nuxt prepare and verify build.
+  - Install Button component to validate the setup.
+
+llm_instruction: |
+  Bootstrap shadcn-vue inside `apps/db` using the `reka-nova` preset.
+
+  1. In `apps/db`, run `pnpm dlx nuxi@latest module add shadcn-nuxt`.
+  2. Update `apps/db/nuxt.config.ts`:
+     - Add `'shadcn-nuxt'` to `modules`.
+     - Add `shadcn: { prefix: 'Ui', componentDir: './app/components/ui' }`.
+  3. Run `pnpm dlx shadcn-vue@latest init --preset reka-nova` in `apps/db`. Allow the CLI to modify CSS/config files.
+  4. Inspect `apps/db/app/assets/css/main.css`:
+     - Remove any `:root { color-scheme: dark; }` hard-coding so class-based theming works.
+     - Ensure `@import 'tailwindcss';` is present and shadcn variable tokens are injected.
+  5. Run `pnpm --filter db nuxt prepare`.
+  6. Install the first component: `pnpm dlx shadcn-vue@latest add button`.
+  7. Verify by temporarily rendering `\u003cUiButton\u003eTest\u003c/UiButton\u003e` in a test page and running `pnpm --filter db build`.
+  8. Remove the temporary test button.
+
+  TDD:
+  - Run `pnpm --filter db build` and confirm no compiler errors.
+  - Run `pnpm lint:fix` to auto-fix any generated file style issues.
+  - No component tests at this step; this is infrastructure only.

@@ -1,0 +1,37 @@
+status: done
+summary: Create shared @monorepo/theme package for dark mode and theming
+references:
+  - files:
+    - packages/shared/package.json
+    - pnpm-workspace.yaml
+    - apps/db/package.json
+    - apps/db/app/app.vue
+    - apps/web/package.json
+    - apps/web/app/app.vue
+approach:
+  - Create packages/theme/ as a new internal workspace package.
+  - Provide a useTheme composable using @vueuse/core useColorMode with localStorage persistence and dark default.
+  - Provide a ThemeToggle component using unplugin-icons.
+  - Link the package into apps/db and apps/web.
+  - Initialize the theme in both app.vue files.
+
+llm_instruction: |
+  Create a new internal package `packages/theme/` for shared theme logic.
+
+  1. Create `packages/theme/package.json` modeled after `packages/shared/package.json`. Name it `@monorepo/theme`. Set `main` and `types` to point to exports. Add `@vueuse/core` as a dependency.
+  2. Create `packages/theme/composables/useTheme.ts`:
+     - Import `useColorMode` from `@vueuse/core`.
+     - Configure: `attribute: 'class'`, `selector: 'document.documentElement'`, `storageKey: 'aso-db-theme'`, `modes: { dark: 'dark', light: 'light' }`, initial value `'dark'`.
+     - Return `{ colorMode, toggle, isDark }`.
+  3. Create `packages/theme/components/ThemeToggle.vue`:
+     - Import `useTheme` from `../composables/useTheme`.
+     - Render a plain `<button>` that toggles light/dark.
+     - Use `~icons/lucide/sun` and `~icons/lucide/moon` from unplugin-icons.
+  4. Add `@monorepo/theme` with `workspace:*` to `apps/db/package.json` and `apps/web/package.json`.
+  5. Update `apps/db/app/app.vue` to import and call `useTheme()` in `<script setup>`.
+  6. Do the same for `apps/web/app/app.vue`.
+
+  TDD:
+  - No direct unit tests for the package.
+  - After integration, run `pnpm install` and verify `pnpm --filter db build` resolves `@monorepo/theme`.
+  - Temporarily add `ThemeToggle` to `apps/db/app/pages/overview.vue` and assert via `vitest run test/components/table-grid.nuxt.spec.ts` that mounting still works.

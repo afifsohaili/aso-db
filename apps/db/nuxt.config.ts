@@ -9,7 +9,12 @@ export default defineNuxtConfig({
     '@vueuse/nuxt',
     ['unplugin-icons/nuxt', {}],
     '@nuxt/test-utils/module',
+    'shadcn-nuxt',
   ],
+  shadcn: {
+    prefix: 'Ui',
+    componentDir: './app/components/ui',
+  },
   components: [
     { path: '~/components', pathPrefix: false },
   ],

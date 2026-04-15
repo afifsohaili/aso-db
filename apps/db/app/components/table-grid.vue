@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { TableInfo } from '~/shared/types/table'
+import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 
 interface Props {
   tables: TableInfo[]
@@ -9,8 +10,8 @@ defineProps<Props>()
 </script>
 
 <template>
-  <div class="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden">
-    <div v-if="tables.length === 0" class="p-8 text-center text-gray-400">
+  <div class="rounded-lg border bg-card overflow-hidden">
+    <div v-if="tables.length === 0" class="p-8 text-center text-muted-foreground">
       <p>No tables found</p>
     </div>
     <div v-else class="p-4">
@@ -19,12 +20,18 @@ defineProps<Props>()
           v-for="table in tables"
           :key="`${table.schema}.${table.name}`"
           :to="`/table/${table.schema}/${table.name}`"
-          class="group p-3 bg-gray-800 border border-gray-700 rounded-lg hover:border-gray-500 hover:bg-gray-750 transition-all duration-200"
+          class="group transition-all duration-200"
         >
-          <div class="flex flex-col">
-            <span class="text-xs text-gray-500 uppercase tracking-wider">{{ table.schema }}</span>
-            <span class="text-sm font-medium text-gray-200 group-hover:text-white">{{ table.name }}</span>
-          </div>
+          <Card class="h-full border hover:border-primary/50 hover:bg-muted/50">
+            <CardHeader class="p-3 pb-0">
+              <span class="text-xs text-muted-foreground uppercase tracking-wider">{{ table.schema }}</span>
+            </CardHeader>
+            <CardContent class="p-3 pt-1">
+              <CardTitle class="text-sm font-medium text-card-foreground group-hover:text-foreground">
+                {{ table.name }}
+              </CardTitle>
+            </CardContent>
+          </Card>
         </NuxtLink>
       </div>
     </div>

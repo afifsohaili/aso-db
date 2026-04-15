@@ -1,0 +1,30 @@
+status: todo
+summary: Migrate Pagination component to shadcn Button and Select on /query and /table pages
+references:
+  - files:
+    - apps/db/app/components/pagination.vue
+    - apps/db/test/components/pagination.nuxt.spec.ts
+    - apps/db/app/pages/table/[schema]/[name].vue
+approach:
+  - Replace native select and buttons with UiSelect and UiButton.
+  - Keep the same props interface (page, limit, totalCount).
+  - Keep ChevronLeft and ChevronRight icons via unplugin-icons.
+  - Remove hard-coded bg-gray-800 border-gray-700 classes.
+  - Update tests to query by shadcn component structure.
+
+llm_instruction: |
+  Rewrite `apps/db/app/components/pagination.vue` using shadcn `UiButton` and `UiSelect`.
+
+  1. Install shadcn components in `apps/db`: `pnpm dlx shadcn-vue@latest add button select`.
+  2. Replace the native `\u003cselect\u003e` with `UiSelect`, `UiSelectTrigger`, `UiSelectValue`, `UiSelectContent`, and `UiSelectItem` for options 25/50/100.
+  3. Replace prev/next buttons with `UiButton` `variant="outline"` `size="icon"` (or `size="sm"`).
+  4. Keep `ChevronLeftIcon` and `ChevronRightIcon` from `~icons/lucide/*` inside the button slots.
+  5. Preserve props (`page`, `limit`, `totalCount`) and emits (`prev`, `next`, `update:limit`).
+  6. Remove all hard-coded gray background/border/text classes.
+
+  TDD:
+  - Update `apps/db/test/components/pagination.nuxt.spec.ts`:
+    - Replace `wrapper.find('select')` with a query for `UiSelectTrigger` (by role, aria-label, or test id).
+    - Replace button finding via `:first-child`/`:last-child` with `wrapper.findAllComponents(UiButton)` and filter by icon or aria-label.
+    - Retain assertions for disabled states, click events (`prev`, `next`), and select option changes.
+  - Run `vitest run test/components/pagination.nuxt.spec.ts` until green.

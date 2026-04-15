@@ -1,0 +1,28 @@
+{
+  "name": "@monorepo/theme",
+  "type": "module",
+  "version": "0.0.1",
+  "private": true,
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.js"
+    },
+    "./composables/useTheme": {
+      "types": "./composables/useTheme.ts",
+      "import": "./composables/useTheme.ts"
+    },
+    "./components/ThemeToggle.vue": {
+      "import": "./components/ThemeToggle.vue"
+    }
+  },
+  "files": [
+    "composables",
+    "components",
+    "index.d.ts",
+    "index.js"
+  ],
+  "dependencies": {
+    "@vueuse/core": "^10.11.1"
+  }
+}

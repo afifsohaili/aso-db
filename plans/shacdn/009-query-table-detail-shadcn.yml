@@ -1,0 +1,34 @@
+status: todo
+summary: Migrate TableDetail data grid to shadcn Table and Badge on /query and /table pages
+references:
+  - files:
+    - apps/db/app/components/table-detail.vue
+    - apps/db/test/components/table-detail.nuxt.spec.ts
+    - apps/db/app/pages/table/[schema]/[name].vue
+approach:
+  - Replace native HTML table with UiTable primitives.
+  - Keep sorting logic and emit behavior exactly the same.
+  - Replace boolean value badges with UiBadge.
+  - Replace null styling with text-muted-foreground italic.
+  - Remove hard-coded bg-gray-900, bg-gray-800, text-gray-400 classes.
+  - Update tests to assert on table structure instead of class names.
+
+llm_instruction: |
+  Rewrite `apps/db/app/components/table-detail.vue` using shadcn `UiTable` primitives and `UiBadge`.
+
+  1. Install shadcn components in `apps/db`: `pnpm dlx shadcn-vue@latest add table badge`.
+  2. Replace native `\u003ctable\u003e`, `\u003cthead\u003e`, `\u003ctbody\u003e`, `\u003ctr\u003e`, `\u003cth\u003e`, `\u003ctd\u003e` with `UiTable`, `UiTableHeader`, `UiTableBody`, `UiTableRow`, `UiTableHead`, `UiTableCell`.
+  3. **Sorting headers:**
+     - Keep click handler cycling sort direction.
+     - Place arrow icons inside `UiTableHead`.
+  4. **Boolean values:** Render `true` / `false` as `UiBadge`.
+  5. **Null values:** Render as `span class="text-muted-foreground italic"`.
+  6. **Empty state:** Keep "No records found" inside a `UiTableCell` spanning all columns.
+  7. Remove all hard-coded gray classes.
+  8. Keep props (`columns`, `records`, `sortColumn`, `sortDirection`) and emit (`update:sort`).
+
+  TDD:
+  - Update `apps/db/test/components/table-detail.nuxt.spec.ts`:
+    - Replace class-name assertions with `UiTable` and `UiBadge` presence checks.
+    - Retain assertions for headers, records, empty state, sort emission, and sort icons.
+  - Run `vitest run test/components/table-detail.nuxt.spec.ts` until green.

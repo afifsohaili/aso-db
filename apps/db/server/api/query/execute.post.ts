@@ -2,6 +2,7 @@ import type { ExecuteQueryRequest, ExecuteQueryResponse, QueryResult } from '../
 import pkg from 'node-sql-parser'
 const { Parser } = pkg
 import { getPool } from '../../utils/db'
+import { getDatabaseUrlHash } from '../../utils/query-db'
 
 const BLOCKED_KEYWORDS = new Set([
   'INSERT',
@@ -96,10 +97,11 @@ export default defineEventHandler(async (event): Promise<ExecuteQueryResponse> =
       }
 
       const durationMs = Math.round(performance.now() - start)
+      const databaseUrlHash = getDatabaseUrlHash()
 
       await db.sql`
-        INSERT INTO query_history (sql_content, duration_ms, row_count, error_message)
-        VALUES (${stmt}, ${durationMs}, ${rowCount}, ${errorMessage ?? null})
+        INSERT INTO query_history (sql_content, database_url, duration_ms, row_count, error_message)
+        VALUES (${stmt}, ${databaseUrlHash}, ${durationMs}, ${rowCount}, ${errorMessage ?? null})
       `
 
       results.push({

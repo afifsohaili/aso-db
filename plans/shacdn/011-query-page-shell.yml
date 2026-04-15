@@ -1,0 +1,40 @@
+status: todo
+summary: Migrate /query page shell and integrate all migrated components
+references:
+  - files:
+    - apps/db/app/pages/query.vue
+    - apps/db/test/e2e/query-page.spec.ts
+    - packages/theme/components/ThemeToggle.vue
+    - apps/db/app/components/query-editor.vue
+    - apps/db/app/components/query-results.vue
+    - apps/db/app/components/query-history-sidebar.vue
+    - apps/db/app/components/pagination.vue
+approach:
+  - Update query.vue header to use UiButton for nav, UiBadge for status, UiPopover for connection info, and ThemeToggle.
+  - Replace write-mode warning overlay with UiAlert banner or subtle destructive border.
+  - Remove all hard-coded gray background/border/text classes from the page shell.
+  - Ensure all child components (QueryEditor, QueryResults, QueryHistorySidebar, Pagination) fit correctly in the updated layout.
+  - Update e2e tests to avoid class-based selectors.
+
+llm_instruction: |
+  Update the `/query` page shell to use shadcn components consistently after its children are migrated.
+
+  1. Install any missing shadcn components in `apps/db`: `pnpm dlx shadcn-vue@latest add badge button separator popover tooltip`.
+  2. **`apps/db/app/pages/query.vue`:**
+     - **Header:** Replace nav links (Overview, Query) with `UiButton`.
+     - **Status badges:** Replace read-only/write-mode badges with `UiBadge`.
+     - **Connection info:** Replace the custom popover with `UiPopover`, `UiPopoverTrigger`, `UiPopoverContent`.
+     - **ThemeToggle:** Place it in the top-right header next to the connection info.
+     - **Write-mode warning:** Replace the red border overlay with an `UiAlert` `variant="destructive"` banner at the top of the editor area, or a subtle `border-destructive` ring around the editor card.
+     - **Resize handle:** Keep as a plain div.
+     - Remove hard-coded `bg-gray-950`, `bg-gray-900`, `border-gray-700`, `text-gray-400`, `text-white` classes. Use `bg-background`, `text-foreground`, `border-border`, `text-muted-foreground`.
+  3. Ensure the three-pane layout widths and behavior remain the same.
+
+  TDD:
+  - Update `apps/db/test/e2e/query-page.spec.ts`:
+    - Replace any class-based selectors with `data-testid` or text selectors.
+    - Assert the theme toggle is present.
+    - Assert the write-mode warning/alert appears when the connection is not read-only.
+    - Retain assertions for query execution, saved queries, and session APIs.
+  - Run `vitest run test/e2e/query-page.spec.ts`.
+  - Run `vitest run test/components/` for all query-related components.

@@ -1,4 +1,5 @@
 import type { SavedQuery } from '../../../../shared/types/query'
+import { getDatabaseUrlHash } from '../../../utils/query-db'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
@@ -10,9 +11,10 @@ export default defineEventHandler(async (event) => {
   }
 
   const db = useDatabase()
+  const databaseUrlHash = getDatabaseUrlHash()
   const result = await db.sql`
-    INSERT INTO saved_queries (title, sql_content)
-    VALUES (${title}, ${sqlContent})
+    INSERT INTO saved_queries (title, sql_content, database_url)
+    VALUES (${title}, ${sqlContent}, ${databaseUrlHash})
     RETURNING id, title, sql_content AS sqlContent, created_at AS createdAt, updated_at AS updatedAt
   `
 

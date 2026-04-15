@@ -1,0 +1,41 @@
+status: todo
+summary: Migrate QueryHistorySidebar to shadcn Collapsible, ScrollArea, Button, and Separator on /query page
+references:
+  - files:
+    - apps/db/app/components/query-history-sidebar.vue
+    - apps/db/test/components/query-history-sidebar.nuxt.spec.ts
+    - apps/db/app/pages/query.vue
+approach:
+  - Replace custom expand/collapse with UiCollapsible.
+  - Wrap lists in UiScrollArea.
+  - Replace action buttons with UiButton variant ghost size icon.
+  - Use UiSeparator between sections.
+  - Remove hard-coded w-64 border-r border-gray-700 bg-gray-900 classes.
+  - Update tests to find collapsible triggers and action buttons by text/aria-label.
+
+llm_instruction: |
+  Rewrite `apps/db/app/components/query-history-sidebar.vue` using shadcn `UiCollapsible`, `UiScrollArea`, `UiButton`, and `UiSeparator`.
+
+  1. Install shadcn components in `apps/db`: `pnpm dlx shadcn-vue@latest add collapsible scroll-area button separator`.
+  2. **Sidebar shell:**
+     - Remove `bg-gray-900 border-gray-700`.
+     - Use `class="w-64 border-r bg-background"`.
+  3. **Sections:**
+     - Wrap "Saved Queries" and "Recent History" in separate `UiCollapsible` components.
+     - Each has a trigger button with a chevron icon and title.
+  4. **Lists:**
+     - Wrap each list inside `UiScrollArea`.
+  5. **Action buttons:**
+     - Load: `UiButton` `variant="ghost"` `size="icon"` with `PlusIcon`.
+     - Star/Unstar: `UiButton` `variant="ghost"` `size="icon"` with `StarIcon`/`FilledStarIcon`.
+     - Delete: `UiButton` `variant="ghost"` `size="icon"` with `TrashIcon`.
+  6. Remove all hard-coded gray classes.
+  7. Keep props (`savedQueries`, `history`) and emits (`load-saved`, `create-new`, `star-history`, `delete-saved`).
+
+  TDD:
+  - Update `apps/db/test/components/query-history-sidebar.nuxt.spec.ts`:
+    - Find collapsible triggers by text ("Saved Queries", "Recent History").
+    - Simulate expand/collapse and assert content visibility.
+    - Find action buttons by `aria-label` or `UiButton` filtering.
+    - Retain assertions for all emitted events.
+  - Run `vitest run test/components/query-history-sidebar.nuxt.spec.ts` until green.

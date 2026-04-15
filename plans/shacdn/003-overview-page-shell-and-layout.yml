@@ -1,0 +1,41 @@
+status: done
+summary: Migrate /overview page shell, layout, and integrate theme toggle
+references:
+  - files:
+    - apps/db/app/layouts/default.vue
+    - apps/db/app/pages/overview.vue
+    - apps/db/app/assets/css/main.css
+    - packages/theme/components/ThemeToggle.vue
+    - apps/db/test/components/table-grid.nuxt.spec.ts
+approach:
+  - Update default.vue layout to use bg-background text-foreground.
+  - Update overview.vue header to use UiButton for nav links and add ThemeToggle.
+  - Replace keyboard hint styling with muted-foreground tokens.
+  - Remove all hard-coded gray background and text classes from overview.vue.
+  - Ensure table-grid still renders correctly inside the updated shell.
+
+llm_instruction: |
+  Update the `/overview` page shell and shared layout to use shadcn tokens and components.
+
+  1. Update `apps/db/app/layouts/default.vue`:
+     - Replace `class="min-h-screen bg-gray-950"` with `class="min-h-screen bg-background text-foreground"`.
+  2. Update `apps/db/app/pages/overview.vue`:
+     - Import `ThemeToggle` from `@monorepo/theme/components/ThemeToggle.vue`.
+     - Replace the header nav buttons (Overview, Query) with `UiButton` `variant="ghost"` or `variant="default"` depending on active state.
+     - Add `ThemeToggle` to the top-right of the header.
+     - Replace `text-white` and `text-gray-400` with `text-foreground` and `text-muted-foreground`.
+     - Replace the keyboard hint `\u003ckbd\u003e` container styling with `bg-muted text-muted-foreground rounded border`.
+     - Remove hard-coded `bg-gray-950`, `bg-gray-900`, `border-gray-700` classes. Use `bg-background`, `border-border`.
+  3. Ensure `CommandPalette` trigger (the keyboard hint or a button) binds `v-model` correctly to open the palette.
+
+  TDD:
+  - Update `apps/db/test/components/table-grid.nuxt.spec.ts`:
+    - This test mounts the page indirectly via setup. Ensure it still passes after layout changes.
+    - If the test asserts `.bg-gray-900`, update it to assert structural presence (e.g., `wrapper.findComponent(TableGrid).exists()` or `UiCard` count after TableGrid is migrated).
+  - Create `apps/db/test/e2e/overview-page.spec.ts`:
+    - Use `setupE2E` from `./utils`.
+    - Navigate to `/overview`.
+    - Assert the page contains "Database Overview".
+    - Assert the theme toggle button is present.
+    - Assert the "Query" navigation button links to `/query`.
+  - Run `vitest run test/e2e/overview-page.spec.ts` (slow or fast mode).

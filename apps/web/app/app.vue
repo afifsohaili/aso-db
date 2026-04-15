@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import { useTheme } from '@monorepo/theme/composables/useTheme'
+
+useTheme()
 </script>
 
 <template>
-  <nuxt-layout>
-    <nuxt-page />
-  </nuxt-layout>
+  <NuxtLayout>
+    <NuxtPage />
+  </NuxtLayout>
 </template>

@@ -2,6 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { setup } from '@nuxt/test-utils/e2e'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import CommandPalette from '~/components/command-palette.vue'
+import {
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '~/components/ui/command'
 import type { TableInfo } from '~/shared/types/table'
 
 describe('CommandPalette', async () => {
@@ -28,7 +36,8 @@ describe('CommandPalette', async () => {
       },
     })
 
-    expect(component.find('.command-palette-overlay').exists()).toBe(false)
+    expect(component.findComponent(CommandDialog).exists()).toBe(true)
+    expect(component.findComponent(CommandInput).exists()).toBe(false)
   })
 
   it('opens when modelValue is true', async () => {
@@ -39,7 +48,7 @@ describe('CommandPalette', async () => {
       },
     })
 
-    expect(component.find('.command-palette-overlay').exists()).toBe(true)
+    expect(component.findComponent(CommandInput).exists()).toBe(true)
   })
 
   it('displays all tables when open', async () => {
@@ -50,7 +59,7 @@ describe('CommandPalette', async () => {
       },
     })
 
-    mockTables.forEach(table => {
+    mockTables.forEach((table) => {
       expect(component.text()).toContain(table.name)
     })
   })
@@ -63,7 +72,7 @@ describe('CommandPalette', async () => {
       },
     })
 
-    const input = component.find('input')
+    const input = component.findComponent(CommandInput).find('input')
     await input.setValue('users')
 
     expect(component.text()).toContain('users')
@@ -86,7 +95,7 @@ describe('CommandPalette', async () => {
     expect(component.emitted('select')![0]).toEqual([mockTables[0]])
   })
 
-  it('emits update:modelValue false when clicking overlay', async () => {
+  it('emits update:modelValue false when dialog closes', async () => {
     const component = await mountSuspended(CommandPalette, {
       props: {
         tables: mockTables,
@@ -94,8 +103,8 @@ describe('CommandPalette', async () => {
       },
     })
 
-    const overlay = component.find('.command-palette-overlay')
-    await overlay.trigger('click')
+    const dialog = component.findComponent(CommandDialog)
+    dialog.vm.$emit('update:open', false)
 
     expect(component.emitted('update:modelValue')).toHaveLength(1)
     expect(component.emitted('update:modelValue')![0]).toEqual([false])
@@ -109,9 +118,10 @@ describe('CommandPalette', async () => {
       },
     })
 
-    const input = component.find('input')
+    const input = component.findComponent(CommandInput).find('input')
     await input.setValue('xyznonexistent')
 
+    expect(component.findComponent(CommandEmpty).exists()).toBe(true)
     expect(component.text()).toContain('No tables found')
   })
 })

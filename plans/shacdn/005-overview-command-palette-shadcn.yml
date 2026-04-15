@@ -1,0 +1,37 @@
+status: done
+summary: Migrate CommandPalette component to shadcn CommandDialog on /overview page
+references:
+  - files:
+    - apps/db/app/components/command-palette.vue
+    - apps/db/test/components/command-palette.nuxt.spec.ts
+    - apps/db/app/pages/overview.vue
+approach:
+  - Replace the custom teleported modal with UiCommandDialog and its sub-components.
+  - Leverage Command's built-in fuzzy filtering or keep existing logic.
+  - Remove hard-coded bg-black/50, bg-gray-900, border-gray-700 classes.
+  - Update tests to interact with CommandDialog structure.
+
+llm_instruction: |
+  Rewrite `apps/db/app/components/command-palette.vue` using shadcn `UiCommandDialog` for the `/overview` page.
+
+  1. Install shadcn components in `apps/db`: `pnpm dlx shadcn-vue@latest add command dialog`.
+  2. **Structure:**
+     - Use `UiCommandDialog` bound to the `modelValue` prop.
+     - Inside: `UiCommandInput` (placeholder: "Search tables..."), `UiCommandList`, `UiCommandGroup` (heading "Tables"), `UiCommandItem` per table, and `UiCommandEmpty` for "No tables found".
+  3. **Filtering:**
+     - If the built-in `Command` filtering is sufficient, remove the custom `filteredTables` computed and let `Command` handle it automatically via the `UiCommandItem` text content.
+     - If not, keep the computed filter but bind it to `UiCommandList`.
+  4. **Events:**
+     - Clicking/selecting a `UiCommandItem` emits `select` with the table object.
+     - Closing the dialog emits `update:modelValue` with `false`.
+  5. Remove all hard-coded overlay/background/border classes.
+  6. Keep props (`modelValue`, `tables`) and emits (`update:modelValue`, `select`).
+
+  TDD:
+  - Update `apps/db/test/components/command-palette.nuxt.spec.ts`:
+    - Mount with `modelValue: true` and assert `UiCommandInput` is present.
+    - Type into `UiCommandInput` and assert filtered `UiCommandItem` results.
+    - Assert `UiCommandEmpty` appears for non-matching search.
+    - Click a `UiCommandItem` and assert `select` event payload.
+    - Close dialog and assert `update:modelValue` emits `false`.
+  - Run `vitest run test/components/command-palette.nuxt.spec.ts` until green.

@@ -1,4 +1,5 @@
 import type { QueryHistoryEntry } from '../../../shared/types/query'
+import { getDatabaseUrlHash } from '../../utils/query-db'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
@@ -6,6 +7,7 @@ export default defineEventHandler(async (event) => {
   const limit = Number.isNaN(rawLimit) || rawLimit <= 0 ? 50 : Math.min(rawLimit, 200)
 
   const db = useDatabase()
+  const databaseUrlHash = getDatabaseUrlHash()
   const result = await db.sql`
     SELECT
       id,
@@ -16,6 +18,9 @@ export default defineEventHandler(async (event) => {
       error_message AS errorMessage,
       saved_query_id AS savedQueryId
     FROM query_history
+    WHERE database_url = ${databaseUrlHash}
+       OR database_url IS NULL
+       OR database_url = ''
     ORDER BY executed_at DESC
     LIMIT ${limit}
   `

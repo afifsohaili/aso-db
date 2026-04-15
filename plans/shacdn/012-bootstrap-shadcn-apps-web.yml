@@ -1,0 +1,38 @@
+status: todo
+summary: Bootstrap shadcn-vue in apps/web with reka-nova preset
+references:
+  - files:
+    - apps/web/nuxt.config.ts
+    - apps/web/package.json
+    - apps/web/app/assets/css/main.css
+    - apps/web/app/app.vue
+    - apps/web/app/layouts/default.vue
+approach:
+  - Install shadcn-nuxt module in apps/web.
+  - Run shadcn-vue init --preset reka-nova.
+  - Register shadcn-nuxt in nuxt.config.ts.
+  - Integrate useTheme from @monorepo/theme in app.vue.
+  - Update default.vue layout to use bg-background text-foreground.
+  - Run nuxt prepare and verify build.
+
+llm_instruction: |
+  Bootstrap shadcn-vue inside `apps/web` using the same `reka-nova` preset as `apps/db`.
+
+  1. In `apps/web`, run `pnpm dlx nuxi@latest module add shadcn-nuxt`.
+  2. Update `apps/web/nuxt.config.ts`:
+     - Add `'shadcn-nuxt'` to `modules`.
+     - Add `shadcn: { prefix: 'Ui', componentDir: './app/components/ui' }`.
+  3. Run `pnpm dlx shadcn-vue@latest init --preset reka-nova` in `apps/web`.
+  4. Inspect `apps/web/app/assets/css/main.css`:
+     - Remove any hard-coded `:root { color-scheme: light; }`.
+     - Ensure shadcn variable tokens are present.
+  5. In `apps/web/app/app.vue`, import and call `useTheme()` from `@monorepo/theme/composables/useTheme`.
+  6. Update `apps/web/app/layouts/default.vue` to use `bg-background text-foreground`.
+  7. Run `pnpm --filter web nuxt prepare`.
+  8. Install first component: `pnpm dlx shadcn-vue@latest add button`.
+  9. Verify by temporarily rendering `\u003cUiButton\u003eTest\u003c/UiButton\u003e` and running `pnpm --filter web build`.
+
+  TDD:
+  - Run `pnpm --filter web build` and confirm no compiler errors.
+  - Run `pnpm lint:fix` for the app.
+  - No component tests at this step.

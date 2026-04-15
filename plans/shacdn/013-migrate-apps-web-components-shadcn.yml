@@ -1,0 +1,61 @@
+status: todo
+summary: Migrate apps/web components to shadcn (auth forms, floating dialog, landing page, admin, notifications)
+references:
+  - files:
+    - apps/web/app/components/auth/login-form.vue
+    - apps/web/app/components/auth/signup-form.vue
+    - apps/web/app/components/floating-dialog.vue
+    - apps/web/app/components/landing-page/landing-page.vue
+    - apps/web/app/components/landing-page/hero-section.vue
+    - apps/web/app/components/landing-page/features-section.vue
+    - apps/web/app/components/landing-page/testimonials-section.vue
+    - apps/web/app/components/landing-page/faq-section.vue
+    - apps/web/app/components/landing-page/cta-section.vue
+    - apps/web/app/components/notifications/notification-item.vue
+    - apps/web/app/components/admin/notification-form.vue
+    - apps/web/test/components/landing-page.nuxt.spec.ts
+approach:
+  - Replace native inputs in auth forms with UiInput, UiLabel, and UiButton.
+  - Replace floating-dialog.vue with UiSonner or UiAlert toast.
+  - shadcn-ify landing page sections by replacing custom card/button styles with UiCard, UiButton, and UiBadge.
+  - Replace admin form controls with UiInput, UiTextarea, UiSelect, and UiButton.
+  - Remove hard-coded border-gray-200, bg-white, and custom button classes.
+  - Update existing component tests to query shadcn structures.
+  - This is low priority and should only begin after apps/db is fully migrated.
+
+llm_instruction: |
+  Perform a full shadcn migration of all `apps/web` interactive and marketing components. This is the lowest priority and should only happen after `apps/db` is complete.
+
+  1. Install required shadcn components in `apps/web` as needed:
+     ```bash
+     pnpm dlx shadcn-vue@latest add button input label card badge alert skeleton sonner select textarea
+     ```
+  2. **`apps/web/app/components/auth/login-form.vue` and `signup-form.vue`:**
+     - Replace native `\u003cinput\u003e` with `UiInput`.
+     - Add `UiLabel` for each field.
+     - Replace submit button with `UiButton` `type="submit"`.
+     - Replace `floating-dialog` error display with `UiAlert` `variant="destructive"` or a `UiSonner` toast.
+  3. **`apps/web/app/components/floating-dialog.vue`:**
+     - Replace custom toast with `UiSonner`.
+     - Update callers to use the Sonner `toast()` API, or keep a thin wrapper if the API must stay the same.
+  4. **`apps/web/app/components/landing-page/*.vue`:**
+     - Replace custom card divs with `UiCard` in features, testimonials, and CTA.
+     - Replace custom buttons with `UiButton`.
+     - Replace tags/badges with `UiBadge`.
+     - Keep layout grids; only swap atomic UI elements.
+  5. **`apps/web/app/components/notifications/notification-item.vue`:**
+     - Use `UiCard` for the item container.
+     - Use `UiBadge` for status labels.
+     - Use `UiButton` for actions.
+  6. **`apps/web/app/components/admin/notification-form.vue`:**
+     - Use `UiInput`, `UiTextarea`, and `UiSelect` for controls.
+     - Use `UiButton` for submit.
+  7. Remove all hard-coded light-theme utility classes. Rely on `bg-background`, `text-foreground`, `border-border`.
+  8. Add `ThemeToggle` from `@monorepo/theme` to the web header/nav.
+
+  TDD:
+  - Update `apps/web/test/components/landing-page.nuxt.spec.ts`:
+    - Replace class-based assertions with structural checks for `UiCard`, `UiButton`.
+  - Add/update auth form component tests to assert `UiInput` and `UiButton` rendering and form submission events.
+  - Run `vitest run apps/web/test/components/`.
+  - Run `pnpm --filter web build`.
