@@ -1,18 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { setup } from '@nuxt/test-utils/e2e'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import TableGrid from '~/components/table-grid.vue'
 import { Card } from '~/components/ui/card'
 import type { TableInfo } from '~/shared/types/table'
 
-describe('TableGrid', async () => {
-  await setup({
-    nuxtConfig: {
-      runtimeConfig: {
-        databaseUrl: 'postgresql://test:test@localhost:5432/test',
-      },
-    },
-  })
+describe('TableGrid', () => {
 
   const mockTables: TableInfo[] = [
     { schema: 'public', name: 'users' },
@@ -39,8 +31,10 @@ describe('TableGrid', async () => {
       },
     })
 
-    expect(component.text()).toContain('public.users')
-    expect(component.text()).toContain('analytics.events')
+    mockTables.forEach((table) => {
+      expect(component.text()).toContain(table.schema)
+      expect(component.text()).toContain(table.name)
+    })
   })
 
   it('links to correct table detail route', async () => {

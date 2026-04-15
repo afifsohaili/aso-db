@@ -1,16 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { setup } from '@nuxt/test-utils/e2e'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import Pagination from '~/components/pagination.vue'
 
-describe('Pagination', async () => {
-  await setup({
-    nuxtConfig: {
-      runtimeConfig: {
-        databaseUrl: 'postgresql://test:test@localhost:5432/test',
-      },
-    },
-  })
+describe('Pagination', () => {
 
   it('renders correct page numbers', async () => {
     const component = await mountSuspended(Pagination, {

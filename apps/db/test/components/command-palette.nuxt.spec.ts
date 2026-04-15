@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { setup } from '@nuxt/test-utils/e2e'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import CommandPalette from '~/components/command-palette.vue'
 import {
@@ -12,14 +11,7 @@ import {
 } from '~/components/ui/command'
 import type { TableInfo } from '~/shared/types/table'
 
-describe('CommandPalette', async () => {
-  await setup({
-    nuxtConfig: {
-      runtimeConfig: {
-        databaseUrl: 'postgresql://test:test@localhost:5432/test',
-      },
-    },
-  })
+describe('CommandPalette', () => {
 
   const mockTables: TableInfo[] = [
     { schema: 'public', name: 'users' },
@@ -59,8 +51,10 @@ describe('CommandPalette', async () => {
       },
     })
 
-    mockTables.forEach((table) => {
-      expect(component.text()).toContain(table.name)
+    const items = component.findAllComponents(CommandItem)
+    expect(items.length).toBe(mockTables.length)
+    mockTables.forEach((table, index) => {
+      expect(items[index].text()).toContain(table.name)
     })
   })
 
@@ -74,10 +68,13 @@ describe('CommandPalette', async () => {
 
     const input = component.findComponent(CommandInput).find('input')
     await input.setValue('users')
+    // allow reka-ui command filtering to flush
+    await new Promise(r => setTimeout(r, 0))
 
-    expect(component.text()).toContain('users')
-    expect(component.text()).not.toContain('posts')
-    expect(component.text()).not.toContain('events')
+    const items = component.findAllComponents(CommandItem)
+    expect(items.some(item => item.text().includes('users'))).toBe(true)
+    expect(items.some(item => item.text().includes('posts'))).toBe(false)
+    expect(items.some(item => item.text().includes('events'))).toBe(false)
   })
 
   it('emits select event when clicking a table', async () => {
@@ -88,7 +85,7 @@ describe('CommandPalette', async () => {
       },
     })
 
-    const tableItem = component.find('[data-testid="table-item"]')
+    const tableItem = component.findAllComponents(CommandItem)[0]
     await tableItem.trigger('click')
 
     expect(component.emitted('select')).toHaveLength(1)
@@ -120,8 +117,10 @@ describe('CommandPalette', async () => {
 
     const input = component.findComponent(CommandInput).find('input')
     await input.setValue('xyznonexistent')
+    // allow reka-ui command filtering to flush
+    await new Promise(r => setTimeout(r, 0))
 
     expect(component.findComponent(CommandEmpty).exists()).toBe(true)
-    expect(component.text()).toContain('No tables found')
+    expect(component.findComponent(CommandEmpty).text()).toContain('No tables found')
   })
 })

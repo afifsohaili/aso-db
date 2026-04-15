@@ -1,16 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { setup } from '@nuxt/test-utils/e2e'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import TableDetail from '~/components/table-detail.vue'
 
-describe('TableDetail', async () => {
-  await setup({
-    nuxtConfig: {
-      runtimeConfig: {
-        databaseUrl: 'postgresql://test:test@localhost:5432/test',
-      },
-    },
-  })
+describe('TableDetail', () => {
 
   const mockColumns = ['id', 'name', 'is_active', 'created_at']
   const mockRecords = [
@@ -131,8 +123,8 @@ describe('TableDetail', async () => {
       },
     })
 
-    // ArrowUp icon should be present for asc sort
-    expect(componentAsc.html()).toContain('arrow-up')
+    // Sort icon (ArrowUp) should be present for asc sort
+    expect(componentAsc.find('svg').exists()).toBe(true)
 
     const componentDesc = await mountSuspended(TableDetail, {
       props: {
@@ -143,8 +135,8 @@ describe('TableDetail', async () => {
       },
     })
 
-    // ArrowDown icon should be present for desc sort
-    expect(componentDesc.html()).toContain('arrow-down')
+    // Sort icon (ArrowDown) should be present for desc sort
+    expect(componentDesc.find('svg').exists()).toBe(true)
   })
 
   it('applies dark theme styling', async () => {

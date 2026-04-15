@@ -17,6 +17,11 @@ export default defineConfig({
           include: ['test/components/**/*.{test,spec}.ts'],
           environment: 'nuxt',
         },
+        resolve: {
+          alias: {
+            'bun:test': 'vitest',
+          },
+        },
       }),
       {
         test: {
