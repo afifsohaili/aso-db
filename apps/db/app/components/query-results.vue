@@ -1,63 +1,83 @@
 <script setup lang="ts">
-import type { QueryResult } from '~/shared/types/query'
+import { computed } from 'vue'
+import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
+import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
+import { Skeleton } from '~/components/ui/skeleton'
 import TableDetail from './table-detail.vue'
+import type { QueryResult } from '~/shared/types/query'
 
 interface Props {
-  results: QueryResult[]
+  results?: QueryResult[]
   loading?: boolean
+  error?: { title: string, message: string } | null
+  sql?: string
+  durationMs?: number
 }
 
-defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  results: () => [],
+  loading: false,
+  error: null,
+  sql: '',
+  durationMs: 0,
+})
 
-function truncateSql(sql: string, maxLen = 120): string {
-  if (sql.length <= maxLen) return sql
-  return `${sql.slice(0, maxLen)}...`
+const firstResult = computed(() => props.results?.[0])
+const columns = computed(() => firstResult.value?.columns ?? [])
+const records = computed(() => firstResult.value?.rows ?? [])
+const rowCount = computed(() => firstResult.value?.rowCount ?? 0)
+
+function truncateSql(sql: string, maxLength: number = 100): string {
+  if (sql.length <= maxLength) return sql
+  return `${sql.slice(0, maxLength)}...`
 }
 </script>
 
 <template>
-  <div class="flex flex-col h-full overflow-y-auto">
-    <div v-if="loading" class="p-4 text-sm text-gray-400">
-      Executing...
-    </div>
+  <div class="h-full">
+    <!-- Loading state -->
+    <Card v-if="loading" class="h-full">
+      <CardHeader>
+        <CardTitle class="text-sm font-medium">Executing query...</CardTitle>
+      </CardHeader>
+      <CardContent class="space-y-2">
+        <Skeleton class="h-4 w-full" />
+        <Skeleton class="h-4 w-3/4" />
+        <Skeleton class="h-4 w-5/6" />
+      </CardContent>
+    </Card>
 
-    <div v-else-if="results.length === 0" class="flex items-center justify-center h-full text-gray-500 text-sm">
-      No results yet. Run a query to see results here.
-    </div>
+    <!-- Empty state -->
+    <Card v-else-if="results.length === 0 && !error" class="h-full">
+      <CardContent class="flex h-full items-center justify-center p-8">
+        <p class="text-muted-foreground">Run a query to see results</p>
+      </CardContent>
+    </Card>
 
-    <div v-else class="flex flex-col gap-3 p-3">
-      <div
-        v-for="result in results"
-        :key="result.index"
-        class="rounded-lg border overflow-hidden"
-        :class="result.success ? 'border-gray-700 bg-gray-900' : 'border-red-700 bg-red-900/20'"
-      >
-        <div class="px-3 py-2 border-b" :class="result.success ? 'border-gray-700 bg-gray-800' : 'border-red-700 bg-red-900/30'">
-          <div class="flex items-center justify-between gap-3">
-            <code class="text-xs text-gray-300 font-mono truncate" :title="result.sql">
-              {{ truncateSql(result.sql) }}
-            </code>
-            <div v-if="result.success" class="flex items-center gap-2 text-xs text-gray-400 shrink-0">
-              <span>{{ result.rowCount }} rows</span>
-              <span>·</span>
-              <span>{{ result.durationMs }}ms</span>
-            </div>
+    <!-- Error state -->
+    <Alert v-else-if="error" variant="destructive">
+      <AlertTitle>{{ error.title }}</AlertTitle>
+      <AlertDescription>{{ error.message }}</AlertDescription>
+    </Alert>
+
+    <!-- Success state -->
+    <Card v-else class="h-full flex flex-col">
+      <CardHeader class="pb-2">
+        <div class="flex items-center justify-between">
+          <CardTitle class="text-sm font-medium">
+            Results ({{ rowCount }} rows)
+          </CardTitle>
+          <div class="text-xs text-muted-foreground">
+            {{ durationMs.toFixed(2) }}ms
           </div>
         </div>
-
-        <div v-if="result.success" class="p-2">
-          <TableDetail
-            :columns="result.columns"
-            :records="result.rows"
-            :total-count="result.rowCount"
-            :sort="{ column: null, direction: null }"
-          />
+        <div class="mt-1 text-xs text-muted-foreground font-mono truncate">
+          {{ truncateSql(sql) }}
         </div>
-
-        <div v-else class="p-3 text-sm text-red-200">
-          {{ result.errorMessage }}
-        </div>
-      </div>
-    </div>
+      </CardHeader>
+      <CardContent class="flex-1 overflow-auto p-0">
+        <TableDetail :columns="columns" :records="records" />
+      </CardContent>
+    </Card>
   </div>
 </template>

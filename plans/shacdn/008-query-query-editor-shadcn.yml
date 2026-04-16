@@ -1,4 +1,9 @@
-status: todo
+status: done
+notes:
+  - Wrapped entire component in UiCard with UiCardHeader and UiCardContent.
+  - Added TooltipProvider wrapper to satisfy shadcn Tooltip requirements.
+  - Used unplugin-icons inside UiButton slots (not lucide-vue-next).
+
 summary: Migrate QueryEditor chrome to shadcn Card, Button, Badge, Separator, and Tooltip on /query page
 references:
   - files:

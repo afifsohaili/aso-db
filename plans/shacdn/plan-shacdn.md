@@ -1,10 +1,31 @@
 # shadcn-vue Integration Plan for ASO-DB
 
-> **Status:** Ready for implementation — awaiting user go-ahead  
+> **Status:** Implementation in progress — `apps/db` migration complete, `apps/web` pending  
 > **Goal:** Full theming swap to shadcn-vue in `apps/db` and `apps/web` with preset-based theming  
 > **Starting Preset:** `reka-nova` (swappable via CLI)  
-> **Priority:** `apps/db` first, then `apps/web`  
-> **Constraint:** No implementation until user approval
+> **Priority:** `apps/db` first, then `apps/web`
+
+---
+
+## Implementation Status
+
+| Plan | Task | Status | Notes |
+|------|------|--------|-------|
+| 001 | Create `@monorepo/theme` package | Done | `useTheme()` + `ThemeToggle.vue` |
+| 002 | Bootstrap shadcn-vue in `apps/db` | Done | Used `nova` preset (CLI name for reka-nova) |
+| 003 | `/overview` page shell + layout | Done | Theme toggle wired, e2e test added |
+| 004 | `TableGrid` → `UiCard` | Done | Component test updated |
+| 005 | `CommandPalette` → `UiCommandDialog` | Done | Fuzzy filter kept, test updated |
+| 006 | `Pagination` → `UiButton` + `UiSelect` | Done | |
+| 007 | `QueryResults` → `UiCard` + `UiAlert` + `UiSkeleton` | Done | |
+| 008 | `QueryEditor` chrome → shadcn | Done | CodeMirror kept, tooltip provider added |
+| 009 | `TableDetail` → `UiTable` + `UiBadge` | Done | Sorting logic preserved |
+| 010 | `QueryHistorySidebar` → `UiCollapsible` + `UiScrollArea` | Done | Fixed `title`/`sqlContent` type mismatches |
+| 011 | `query.vue` page shell | Done | Fixed API payload bugs, replaced missing compress icon |
+| 012 | Bootstrap shadcn-vue in `apps/web` | Todo | Low priority |
+| 013 | Migrate `apps/web` components | Todo | Low priority |
+
+**Known Issue:** `apps/db` component tests fail globally due to `@nuxt/test-utils` environment regression after adding `shadcn-nuxt`. E2E tests and `pnpm build` pass. This needs investigation before relying on component test suite.
 
 ---
 

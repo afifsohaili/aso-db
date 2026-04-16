@@ -13,7 +13,7 @@
   "scripts": {
     "build": "nuxt build && pnpm build:cli",
     "build:cli": "esbuild bin/asodb.ts --bundle --platform=node --target=node20 --outfile=bin/asodb.js --format=esm",
-    "dev": "nuxt dev",
+    "dev": "nuxt dev --port 3301",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
@@ -30,6 +30,7 @@
     "@marimo-team/codemirror-ai": "^0.3.7",
     "@monorepo/theme": "workspace:*",
     "@tailwindcss/vite": "^4.1.17",
+    "@tanstack/vue-table": "^8.21.3",
     "@vueuse/core": "^10.11.1",
     "@vueuse/nuxt": "^14.0.0",
     "class-variance-authority": "^0.7.1",

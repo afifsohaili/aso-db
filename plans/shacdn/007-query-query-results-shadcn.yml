@@ -1,4 +1,8 @@
-status: todo
+status: done
+notes:
+  - Empty state text changed from 'No results yet' to 'Run a query to see results' for consistency with other apps.
+  - "Error prop interface kept as { title: string, message: string } | null."
+
 summary: Migrate QueryResults component to shadcn Card, Alert, and Skeleton on /query page
 references:
   - files:

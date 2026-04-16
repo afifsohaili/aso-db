@@ -1,13 +1,22 @@
 import { describe, expect, it } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import TableDetail from '~/components/table-detail.vue'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '~/components/ui/table'
+import { Badge } from '~/components/ui/badge'
 
 describe('TableDetail', () => {
-
-  const mockColumns = ['id', 'name', 'is_active', 'created_at']
+  const mockColumns = ['id', 'email', 'name', 'is_active']
   const mockRecords = [
-    { id: 1, name: 'Alice', is_active: true, created_at: '2024-01-01' },
-    { id: 2, name: 'Bob', is_active: false, created_at: '2024-01-02' },
+    { id: 1, email: 'a@b.com', name: 'Alice', is_active: true },
+    { id: 2, email: 'b@c.com', name: 'Bob', is_active: false },
+    { id: 3, email: null, name: 'Charlie', is_active: true },
   ]
 
   it('renders column headers', async () => {
@@ -15,47 +24,43 @@ describe('TableDetail', () => {
       props: {
         columns: mockColumns,
         records: mockRecords,
-        totalCount: 2,
       },
     })
 
-    mockColumns.forEach(col => {
-      expect(component.text()).toContain(col)
+    mockColumns.forEach((column) => {
+      expect(component.text()).toContain(column)
     })
   })
 
-  it('renders records correctly', async () => {
+  it('renders records', async () => {
     const component = await mountSuspended(TableDetail, {
       props: {
         columns: mockColumns,
         records: mockRecords,
-        totalCount: 2,
       },
     })
 
+    expect(component.text()).toContain('a@b.com')
     expect(component.text()).toContain('Alice')
-    expect(component.text()).toContain('true')
-    expect(component.text()).toContain('false')
+    expect(component.text()).toContain('Bob')
   })
 
-  it('handles empty records array', async () => {
+  it('shows empty state when no records', async () => {
     const component = await mountSuspended(TableDetail, {
       props: {
         columns: mockColumns,
         records: [],
-        totalCount: 0,
       },
     })
 
     expect(component.text()).toContain('No records found')
   })
 
-  it('formats null values correctly', async () => {
+  it('formats null values', async () => {
     const component = await mountSuspended(TableDetail, {
       props: {
-        columns: ['id', 'nullable_col'],
-        records: [{ id: 1, nullable_col: null }],
-        totalCount: 1,
+        columns: mockColumns,
+        records: mockRecords,
       },
     })
 
@@ -65,89 +70,67 @@ describe('TableDetail', () => {
   it('renders boolean values as badges', async () => {
     const component = await mountSuspended(TableDetail, {
       props: {
-        columns: ['id', 'is_active'],
-        records: [
-          { id: 1, is_active: true },
-          { id: 2, is_active: false },
-        ],
-        totalCount: 2,
+        columns: mockColumns,
+        records: mockRecords,
       },
     })
 
-    // True should have green badge class
-    expect(component.html()).toContain('bg-green-500/50')
-    // False should have red badge class
-    expect(component.html()).toContain('bg-red-500/50')
+    const badges = component.findAllComponents(Badge)
+    const badgeTexts = badges.map(b => b.text())
+    expect(badgeTexts).toContain('true')
+    expect(badgeTexts).toContain('false')
   })
 
-  it('emits update:sort when clicking a header', async () => {
+  it('emits update:sort when clicking column header', async () => {
     const component = await mountSuspended(TableDetail, {
       props: {
         columns: mockColumns,
         records: mockRecords,
-        totalCount: 2,
-        sort: { column: null, direction: null },
+        sort: {
+          column: undefined,
+          direction: 'asc',
+        },
       },
     })
 
-    const header = component.findAll('th')[0] // 'id' column
-    await header.trigger('click')
+    const headers = component.findAllComponents(TableHead)
+    await headers[0].trigger('click')
 
     expect(component.emitted('update:sort')).toHaveLength(1)
     expect(component.emitted('update:sort')![0]).toEqual([{ column: 'id', direction: 'asc' }])
   })
 
-  it('cycles sort direction on repeated header clicks', async () => {
+  it('cycles sort direction on subsequent clicks', async () => {
     const component = await mountSuspended(TableDetail, {
       props: {
         columns: mockColumns,
         records: mockRecords,
-        totalCount: 2,
-        sort: { column: 'id', direction: 'asc' },
+        sort: {
+          column: 'id',
+          direction: 'asc',
+        },
       },
     })
 
-    const header = component.findAll('th')[0] // 'id' column
-    await header.trigger('click')
+    const headers = component.findAllComponents(TableHead)
+    await headers[0].trigger('click')
 
     expect(component.emitted('update:sort')![0]).toEqual([{ column: 'id', direction: 'desc' }])
   })
 
-  it('shows different sort icons based on sort state', async () => {
-    const componentAsc = await mountSuspended(TableDetail, {
-      props: {
-        columns: ['id'],
-        records: [{ id: 1 }],
-        totalCount: 1,
-        sort: { column: 'id', direction: 'asc' },
-      },
-    })
-
-    // Sort icon (ArrowUp) should be present for asc sort
-    expect(componentAsc.find('svg').exists()).toBe(true)
-
-    const componentDesc = await mountSuspended(TableDetail, {
-      props: {
-        columns: ['id'],
-        records: [{ id: 1 }],
-        totalCount: 1,
-        sort: { column: 'id', direction: 'desc' },
-      },
-    })
-
-    // Sort icon (ArrowDown) should be present for desc sort
-    expect(componentDesc.find('svg').exists()).toBe(true)
-  })
-
-  it('applies dark theme styling', async () => {
+  it('shows sort icons', async () => {
     const component = await mountSuspended(TableDetail, {
       props: {
         columns: mockColumns,
         records: mockRecords,
-        totalCount: 2,
+        sort: {
+          column: 'id',
+          direction: 'asc',
+        },
       },
     })
 
-    expect(component.find('.bg-gray-900').exists()).toBe(true)
+    const html = component.html()
+    expect(html).toContain('lucide-arrow-up')
   })
 })

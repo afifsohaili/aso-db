@@ -3,7 +3,7 @@ import { useColorMode } from '@vueuse/core'
 export function useTheme() {
   const colorMode = useColorMode({
     attribute: 'class',
-    selector: 'document.documentElement',
+    selector: 'html',
     storageKey: 'aso-db-theme',
     modes: {
       dark: 'dark',

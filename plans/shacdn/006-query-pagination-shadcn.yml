@@ -1,4 +1,4 @@
-status: todo
+status: done
 summary: Migrate Pagination component to shadcn Button and Select on /query and /table pages
 references:
   - files:

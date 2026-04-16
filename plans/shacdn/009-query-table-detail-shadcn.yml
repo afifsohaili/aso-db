@@ -1,4 +1,9 @@
-status: todo
+status: done
+notes:
+  - TableHead cells remain directly clickable for sorting (no extra UiButton wrapper needed).
+  - Boolean badges use UiBadge variant='secondary'.
+  - Null values use text-muted-foreground italic span.
+
 summary: Migrate TableDetail data grid to shadcn Table and Badge on /query and /table pages
 references:
   - files:

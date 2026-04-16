@@ -1,64 +1,91 @@
 import { describe, expect, it } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import QueryHistorySidebar from '~/components/query-history-sidebar.vue'
+import { Button } from '~/components/ui/button'
 
-describe('query-history-sidebar', () => {
-  const savedQueries = [
-    { id: 1, title: 'Users Query', sqlContent: 'SELECT * FROM users', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+describe('QueryHistorySidebar', () => {
+  const mockSavedQueries = [
+    { id: '1', title: 'Users Query', sqlContent: 'SELECT * FROM users' },
+    { id: '2', title: 'Posts Query', sqlContent: 'SELECT * FROM posts' },
   ]
 
-  const history = [
-    { id: 10, sqlContent: 'SELECT 1', executedAt: new Date().toISOString(), durationMs: 5, rowCount: 1, errorMessage: null, savedQueryId: null },
+  const mockHistory = [
+    { id: '1', sqlContent: 'SELECT * FROM users', executedAt: '2024-01-01T10:00:00Z', isStarred: false },
+    { id: '2', sqlContent: 'SELECT * FROM posts', executedAt: '2024-01-01T11:00:00Z', isStarred: true },
   ]
 
   it('renders saved queries and history', async () => {
     const wrapper = await mountSuspended(QueryHistorySidebar, {
-      props: { savedQueries, history },
+      props: {
+        savedQueries: mockSavedQueries,
+        history: mockHistory,
+      },
     })
+
+    expect(wrapper.text()).toContain('Saved Queries')
+    expect(wrapper.text()).toContain('Recent History')
     expect(wrapper.text()).toContain('Users Query')
-    expect(wrapper.text()).toContain('SELECT 1')
+    expect(wrapper.text()).toContain('Posts Query')
   })
 
-  it('emits load-saved when a saved query is clicked', async () => {
+  it('emits load-saved when clicking a saved query', async () => {
     const wrapper = await mountSuspended(QueryHistorySidebar, {
-      props: { savedQueries, history },
+      props: {
+        savedQueries: mockSavedQueries,
+        history: mockHistory,
+      },
     })
-    const btn = wrapper.findAll('button').find(b => b.text().includes('Users Query'))
-    expect(btn).toBeDefined()
-    await btn!.trigger('click')
+
+    const items = wrapper.findAll('.cursor-pointer')
+    const savedQueryItem = items.find(el => el.text().includes('Users Query'))
+    await savedQueryItem?.trigger('click')
+
     expect(wrapper.emitted('load-saved')).toHaveLength(1)
+    expect(wrapper.emitted('load-saved')![0]).toEqual([mockSavedQueries[0]])
   })
 
-  it('emits create-new when plus button is clicked', async () => {
+  it('emits create-new when clicking New Query button', async () => {
     const wrapper = await mountSuspended(QueryHistorySidebar, {
-      props: { savedQueries, history },
+      props: {
+        savedQueries: mockSavedQueries,
+        history: mockHistory,
+      },
     })
-    const buttons = wrapper.findAll('button')
-    const plusBtn = buttons.find(b => b.attributes('title') === 'New query')
-    expect(plusBtn).toBeDefined()
-    await plusBtn!.trigger('click')
+
+    const buttons = wrapper.findAllComponents(Button)
+    const newQueryButton = buttons.find(b => b.text().includes('New Query'))
+    await newQueryButton?.trigger('click')
+
     expect(wrapper.emitted('create-new')).toHaveLength(1)
   })
 
-  it('emits star-history when star button is clicked', async () => {
+  it('emits star-history when clicking star button', async () => {
     const wrapper = await mountSuspended(QueryHistorySidebar, {
-      props: { savedQueries, history },
+      props: {
+        savedQueries: mockSavedQueries,
+        history: mockHistory,
+      },
     })
-    const buttons = wrapper.findAll('button')
-    const starBtn = buttons.find(b => b.attributes('title') === 'Star')
-    expect(starBtn).toBeDefined()
-    await starBtn!.trigger('click')
+
+    const starButtons = wrapper.findAllComponents(Button).filter(b => b.attributes('aria-label')?.includes('Star query') || b.attributes('aria-label')?.includes('Unstar query'))
+    await starButtons[0]?.trigger('click')
+
     expect(wrapper.emitted('star-history')).toHaveLength(1)
+    expect(wrapper.emitted('star-history')![0]).toEqual([mockHistory[0]])
   })
 
-  it('emits delete-saved when trash button is clicked', async () => {
+  it('emits delete-saved when clicking delete button', async () => {
     const wrapper = await mountSuspended(QueryHistorySidebar, {
-      props: { savedQueries, history },
+      props: {
+        savedQueries: mockSavedQueries,
+        history: mockHistory,
+      },
     })
-    const buttons = wrapper.findAll('button')
-    const trashBtn = buttons.find(b => b.attributes('title') === 'Delete')
-    expect(trashBtn).toBeDefined()
-    await trashBtn!.trigger('click')
+
+    const deleteButton = wrapper.findAllComponents(Button).find(b => b.attributes('aria-label') === 'Delete saved query')
+    await deleteButton?.trigger('click')
+
     expect(wrapper.emitted('delete-saved')).toHaveLength(1)
+    expect(wrapper.emitted('delete-saved')![0]).toEqual([mockSavedQueries[0]])
   })
 })

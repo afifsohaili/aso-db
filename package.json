@@ -5,7 +5,8 @@
   "type": "module",
   "packageManager": "pnpm@10.11.0",
   "scripts": {
-    "dev": "pnpm --filter web dev",
+    "dev": "pnpm --parallel --filter web --filter asodb dev",
+    "dev:db": "pnpm --filter asodb dev",
     "build": "pnpm --filter web build",
     "generate": "pnpm --filter web generate",
     "preview": "pnpm --filter web preview",

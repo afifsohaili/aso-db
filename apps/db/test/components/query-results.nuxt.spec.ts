@@ -1,63 +1,72 @@
 import { describe, expect, it } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import QueryResults from '~/components/query-results.vue'
+import { Alert, AlertTitle, AlertDescription } from '~/components/ui/alert'
+import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
+import { Skeleton } from '~/components/ui/skeleton'
+import TableDetail from '~/components/table-detail.vue'
 
-describe('query-results', () => {
-  it('shows placeholder when results are empty', async () => {
-    const wrapper = await mountSuspended(QueryResults, {
-      props: { results: [], loading: false },
-    })
-    expect(wrapper.text()).toContain('No results yet')
-  })
-
-  it('shows loading text when loading', async () => {
-    const wrapper = await mountSuspended(QueryResults, {
-      props: { results: [], loading: true },
-    })
-    expect(wrapper.text()).toContain('Executing')
-  })
-
-  it('renders successful result panel with row count and duration', async () => {
-    const wrapper = await mountSuspended(QueryResults, {
+describe('QueryResults', () => {
+  it('shows placeholder when no results', async () => {
+    const component = await mountSuspended(QueryResults, {
       props: {
-        results: [
-          {
-            index: 0,
-            sql: 'SELECT 1',
-            success: true,
-            columns: ['?column?'],
-            rows: [{ '?column?': 1 }],
-            rowCount: 1,
-            durationMs: 5,
-          },
-        ],
+        results: [],
         loading: false,
       },
     })
-    expect(wrapper.text()).toContain('SELECT 1')
-    expect(wrapper.text()).toContain('1 rows')
-    expect(wrapper.text()).toContain('5ms')
+
+    expect(component.text()).toContain('Run a query to see results')
   })
 
-  it('renders error result panel with red styling', async () => {
-    const wrapper = await mountSuspended(QueryResults, {
+  it('shows loading state', async () => {
+    const component = await mountSuspended(QueryResults, {
       props: {
-        results: [
-          {
-            index: 0,
-            sql: 'BAD SQL',
-            success: false,
-            columns: [],
-            rows: [],
-            rowCount: 0,
-            durationMs: 0,
-            errorMessage: 'syntax error',
-          },
-        ],
-        loading: false,
+        results: [],
+        loading: true,
       },
     })
-    expect(wrapper.text()).toContain('BAD SQL')
-    expect(wrapper.text()).toContain('syntax error')
+
+    expect(component.findComponent(Skeleton).exists()).toBe(true)
+    expect(component.text()).toContain('Executing query')
+  })
+
+  it('shows successful result panel', async () => {
+    const results = [
+      { id: 1, name: 'Alice' },
+      { id: 2, name: 'Bob' },
+    ]
+
+    const component = await mountSuspended(QueryResults, {
+      props: {
+        results,
+        loading: false,
+        sql: 'SELECT * FROM users',
+        durationMs: 42.5,
+      },
+    })
+
+    expect(component.text()).toContain('Results (2 rows)')
+    expect(component.text()).toContain('42.50ms')
+    expect(component.text()).toContain('SELECT * FROM users')
+    expect(component.findComponent(TableDetail).exists()).toBe(true)
+  })
+
+  it('shows error panel', async () => {
+    const component = await mountSuspended(QueryResults, {
+      props: {
+        results: [],
+        loading: false,
+        error: {
+          title: 'Execution Error',
+          message: 'Syntax error at line 1',
+        },
+      },
+    })
+
+    expect(component.findComponent(Alert).exists()).toBe(true)
+    expect(component.findComponent(AlertTitle).exists()).toBe(true)
+    expect(component.findComponent(AlertDescription).exists()).toBe(true)
+    expect(component.text()).toContain('Execution Error')
+    expect(component.text()).toContain('Syntax error at line 1')
   })
 })

@@ -1,149 +1,177 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { EditorView, keymap } from '@codemirror/view'
-import { EditorState } from '@codemirror/state'
-import { basicSetup } from 'codemirror'
+import { EditorState, Prec } from '@codemirror/state'
 import { sql } from '@codemirror/lang-sql'
 import { oneDark } from '@codemirror/theme-one-dark'
+import { basicSetup } from 'codemirror'
+import PlayIcon from '~icons/lucide/play'
+import PlayPartialIcon from '~icons/lucide/play-circle'
+import { Badge } from '~/components/ui/badge'
+import { Button } from '~/components/ui/button'
+import { Card, CardContent, CardHeader } from '~/components/ui/card'
+import { Separator } from '~/components/ui/separator'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '~/components/ui/tooltip'
 
 interface Props {
   modelValue: string
+  loading?: boolean
   readOnly?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  loading: false,
+  readOnly: true,
+})
+
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: string): void
-  (e: 'run-all'): void
-  (e: 'run-selected'): void
+  'update:modelValue': [value: string]
+  'run-all': []
+  'run-selected': [selectedSql: string]
 }>()
 
-const editorRef = ref<HTMLElement | undefined>(undefined)
-let view: EditorView | undefined
+const editorRef = ref<HTMLDivElement | null>(null)
+let editorView: EditorView | null = null
 
-const hasSelection = ref(false)
+function getSelectedText(): string {
+  if (!editorView) return ''
+  const selection = editorView.state.selection.main
+  if (selection.from === selection.to) return ''
+  return editorView.state.sliceDoc(selection.from, selection.to)
+}
 
-function createState(doc: string) {
-  return EditorState.create({
-    doc,
+function handleRunAll() {
+  emit('run-all')
+}
+
+function handleRunSelected() {
+  emit('run-selected', getSelectedText())
+}
+
+onMounted(() => {
+  if (!editorRef.value) return
+
+  const customKeymap = Prec.high(keymap.of([
+    {
+      key: 'Mod-Enter',
+      run: () => {
+        handleRunAll()
+        return true
+      },
+    },
+    {
+      key: 'Shift-Mod-Enter',
+      run: () => {
+        handleRunSelected()
+        return true
+      },
+    },
+  ]))
+
+  const startState = EditorState.create({
+    doc: props.modelValue,
     extensions: [
-      keymap.of([
-        {
-          key: 'Mod-Enter',
-          run: () => {
-            emit('run-all')
-            return true
-          },
-        },
-        {
-          key: 'Shift-Mod-Enter',
-          run: () => {
-            if (hasSelection.value) {
-              emit('run-selected')
-            }
-            return true
-          },
-        },
-      ]),
       basicSetup,
       sql(),
       oneDark,
+      customKeymap,
       EditorView.updateListener.of((update) => {
         if (update.docChanged) {
           emit('update:modelValue', update.state.doc.toString())
         }
-        const sel = update.state.selection.main
-        hasSelection.value = sel.from !== sel.to
       }),
       EditorView.theme({
         '&': {
           fontSize: '14px',
         },
         '.cm-content': {
-          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+          minHeight: '200px',
         },
       }),
     ],
   })
-}
 
-onMounted(() => {
-  if (!editorRef.value)
-    return
-  view = new EditorView({
-    state: createState(props.modelValue),
+  editorView = new EditorView({
+    state: startState,
     parent: editorRef.value,
   })
 })
 
 onUnmounted(() => {
-  view?.destroy()
-  view = undefined
+  editorView?.destroy()
 })
 
-watch(() => props.modelValue, (val) => {
-  if (view && val !== view.state.doc.toString()) {
-    view.dispatch({
-      changes: { from: 0, to: view.state.doc.length, insert: val },
+watch(() => props.modelValue, (newValue) => {
+  if (editorView && editorView.state.doc.toString() !== newValue) {
+    editorView.dispatch({
+      changes: {
+        from: 0,
+        to: editorView.state.doc.length,
+        insert: newValue,
+      },
     })
   }
 })
-
-function runAll() {
-  emit('run-all')
-}
-
-function runSelected() {
-  if (hasSelection.value) {
-    emit('run-selected')
-  }
-}
-
-function getSelectedSql() {
-  if (!view)
-    return ''
-  const sel = view.state.selection.main
-  if (sel.from === sel.to)
-    return ''
-  return view.state.doc.sliceString(sel.from, sel.to)
-}
-
-defineExpose({ getSelectedSql })
-
-const runSelectedDisabled = computed(() => !hasSelection.value)
 </script>
 
 <template>
-  <div class="flex flex-col h-full">
-    <div class="flex items-center gap-2 px-3 py-2 border-b border-gray-700 bg-gray-900">
-      <button
-        class="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-        @click="runAll"
-      >
-        Run All
-      </button>
-      <button
-        class="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-        :disabled="runSelectedDisabled"
-        @click="runSelected"
-      >
-        Run Selected
-      </button>
-      <span
-        v-if="props.readOnly"
-        class="ml-auto px-2 py-0.5 text-xs font-medium text-gray-300 bg-gray-800 rounded"
-      >
-        Read-Only
-      </span>
-      <span v-else class="ml-auto px-2 py-0.5 text-xs font-medium text-white bg-red-600 rounded">
-        Write Mode
-      </span>
-      <span class="text-xs text-gray-400">
-        Cmd+Enter to run · Cmd+Shift+Enter for selection
-      </span>
-    </div>
-    <div ref="editorRef" class="flex-1 min-h-0 bg-gray-950">
-      <!-- CodeMirror mounts here -->
-    </div>
-  </div>
+  <TooltipProvider>
+    <Card class="h-full flex flex-col">
+      <CardHeader class="flex flex-row items-center justify-between space-y-0 py-3">
+        <div class="flex items-center gap-2">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                size="sm"
+                :disabled="loading"
+                @click="handleRunAll"
+              >
+                <PlayIcon class="mr-2 h-4 w-4" />
+                Run All
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Ctrl+Enter</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                variant="outline"
+                size="sm"
+                :disabled="loading || !getSelectedText()"
+                @click="handleRunSelected"
+              >
+                <PlayPartialIcon class="mr-2 h-4 w-4" />
+                Run Selected
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Ctrl+Shift+Enter</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+
+        <Separator orientation="vertical" class="h-6" />
+
+        <div class="flex items-center gap-2">
+          <Badge v-if="readOnly" variant="secondary">Read-only</Badge>
+          <Badge v-else variant="destructive">Write mode</Badge>
+        </div>
+      </CardHeader>
+
+      <CardContent class="flex-1 p-0 overflow-hidden">
+        <div
+          ref="editorRef"
+          class="h-full"
+        />
+      </CardContent>
+    </Card>
+  </TooltipProvider>
 </template>

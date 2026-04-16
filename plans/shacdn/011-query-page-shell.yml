@@ -1,4 +1,13 @@
-status: todo
+status: done
+notes:
+  - Write-mode warning overlay replaced with UiAlert banner instead of border ring (more accessible).
+  - Fixed multiple API payload bugs in original query.vue:
+      - saved queries now send { title, sqlContent }
+      - session now sends/reads { sqlContent }
+      - history items now use sqlContent
+  - Replaced missing ~icons/lucide/compress with ~icons/lucide/minimize-2.
+  - ThemeToggle added to header.
+
 summary: Migrate /query page shell and integrate all migrated components
 references:
   - files:

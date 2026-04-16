@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import ChevronLeftIcon from '~icons/lucide/chevron-left'
 import ChevronRightIcon from '~icons/lucide/chevron-right'
+import { Button } from '~/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '~/components/ui/select'
 
 interface Props {
   page: number
@@ -16,55 +24,70 @@ const emit = defineEmits<{
   'update:limit': [value: number]
 }>()
 
-const totalPages = computed(() => Math.ceil(props.totalCount / props.limit))
-const startRow = computed(() => (props.page - 1) * props.limit + 1)
-const endRow = computed(() => Math.min(props.page * props.limit, props.totalCount))
+const totalPages = computed(() => {
+  if (props.totalCount === 0) return 1
+  return Math.ceil(props.totalCount / props.limit)
+})
 
-function onLimitChange(event: Event) {
-  const value = Number.parseInt((event.target as HTMLSelectElement).value, 10)
-  emit('update:limit', value)
+const startRow = computed(() => {
+  if (props.totalCount === 0) return 0
+  return (props.page - 1) * props.limit + 1
+})
+
+const endRow = computed(() => {
+  return Math.min(props.page * props.limit, props.totalCount)
+})
+
+const limitOptions = [25, 50, 100]
+
+function onLimitChange(value: string) {
+  emit('update:limit', Number(value))
 }
 </script>
 
 <template>
-  <div class="flex items-center justify-between px-4 py-3 border-t border-gray-700 bg-gray-900">
-    <div class="flex items-center gap-2 text-sm text-gray-400">
-      <span>Rows per page:</span>
-      <select
-        :value="limit"
-        class="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        @change="onLimitChange"
-      >
-        <option :value="25">25</option>
-        <option :value="50">50</option>
-        <option :value="100">100</option>
-      </select>
+  <div class="flex items-center justify-between px-4 py-3 border-t bg-background">
+    <div class="flex items-center gap-2">
+      <span class="text-sm text-muted-foreground">Rows per page:</span>
+      <Select :model-value="String(limit)" @update:model-value="onLimitChange">
+        <SelectTrigger class="w-20">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem
+            v-for="option in limitOptions"
+            :key="option"
+            :value="String(option)"
+          >
+            {{ option }}
+          </SelectItem>
+        </SelectContent>
+      </Select>
     </div>
 
-    <div class="flex items-center gap-4 text-sm text-gray-400">
-      <span>
-        {{ startRow }}-{{ endRow }} of {{ totalCount }} rows
-      </span>
-      <span>
-        Page {{ page }} of {{ totalPages }}
-      </span>
+    <div class="text-sm text-muted-foreground">
+      {{ startRow }}-{{ endRow }} of {{ totalCount }}
     </div>
 
     <div class="flex items-center gap-2">
-      <button
+      <Button
+        variant="outline"
+        size="icon"
         :disabled="page <= 1"
-        class="p-2 rounded-lg border border-gray-700 bg-gray-800 text-gray-300 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        aria-label="Previous page"
         @click="emit('prev')"
       >
-        <ChevronLeftIcon class="w-4 h-4" />
-      </button>
-      <button
+        <ChevronLeftIcon class="h-4 w-4" />
+      </Button>
+      <Button
+        variant="outline"
+        size="icon"
         :disabled="page >= totalPages"
-        class="p-2 rounded-lg border border-gray-700 bg-gray-800 text-gray-300 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        aria-label="Next page"
         @click="emit('next')"
       >
-        <ChevronRightIcon class="w-4 h-4" />
-      </button>
+        <ChevronRightIcon class="h-4 w-4" />
+      </Button>
     </div>
   </div>
 </template>

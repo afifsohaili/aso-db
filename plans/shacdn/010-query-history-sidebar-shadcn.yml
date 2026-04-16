@@ -1,4 +1,9 @@
-status: todo
+status: done
+notes:
+  - Fixed long-standing type mismatch: SavedQuery fields are title/sqlContent (not name/sql).
+  - Fixed HistoryItem field to sqlContent to match API.
+  - Star button aria-label toggles between 'Star query' and 'Unstar query'.
+
 summary: Migrate QueryHistorySidebar to shadcn Collapsible, ScrollArea, Button, and Separator on /query page
 references:
   - files:
