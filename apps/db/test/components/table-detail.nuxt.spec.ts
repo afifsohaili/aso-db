@@ -81,6 +81,50 @@ describe('TableDetail', () => {
     expect(badgeTexts).toContain('false')
   })
 
+  it('pretty-prints JSON object values', async () => {
+    const component = await mountSuspended(TableDetail, {
+      props: {
+        columns: ['id', 'metadata'],
+        records: [
+          { id: 1, metadata: { name: 'Alice', tags: ['a', 'b'] } },
+        ],
+      },
+    })
+
+    const html = component.html()
+    expect(html).toContain('"name": "Alice"')
+    expect(html).toContain('"tags": [')
+  })
+
+  it('pretty-prints JSON string values', async () => {
+    const component = await mountSuspended(TableDetail, {
+      props: {
+        columns: ['id', 'metadata'],
+        records: [
+          { id: 1, metadata: '{"name":"Alice","active":true}' },
+        ],
+      },
+    })
+
+    const html = component.html()
+    expect(html).toContain('"name": "Alice"')
+    expect(html).toContain('"active": true')
+  })
+
+  it('applies whitespace-pre class to JSON values', async () => {
+    const component = await mountSuspended(TableDetail, {
+      props: {
+        columns: ['id', 'metadata'],
+        records: [
+          { id: 1, metadata: { name: 'Alice' } },
+        ],
+      },
+    })
+
+    const html = component.html()
+    expect(html).toContain('whitespace-pre')
+  })
+
   it('emits update:sort when clicking column header', async () => {
     const component = await mountSuspended(TableDetail, {
       props: {
@@ -131,6 +175,7 @@ describe('TableDetail', () => {
     })
 
     const html = component.html()
-    expect(html).toContain('lucide-arrow-up')
+    // Arrow-up icon SVG path from lucide
+    expect(html).toContain('m5 12l7-7l7 7m-7 7V5')
   })
 })

@@ -60,12 +60,37 @@ function getSortIcon(column: string) {
 function formatValue(value: unknown): string {
   if (value === null) return 'null'
   if (typeof value === 'boolean') return String(value)
-  if (typeof value === 'object') return JSON.stringify(value)
+  if (typeof value === 'object') return JSON.stringify(value, null, 2)
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value)
+      if (typeof parsed === 'object' && parsed !== null)
+        return JSON.stringify(parsed, null, 2)
+    }
+    catch {
+      // not valid JSON, return as-is
+    }
+  }
   return String(value)
 }
 
 function isBooleanValue(value: unknown): boolean {
   return typeof value === 'boolean'
+}
+
+function isJsonValue(value: unknown): boolean {
+  if (value === null) return false
+  if (typeof value === 'object') return true
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value)
+      return typeof parsed === 'object' && parsed !== null
+    }
+    catch {
+      return false
+    }
+  }
+  return false
 }
 </script>
 
@@ -103,6 +128,10 @@ function isBooleanValue(value: unknown): boolean {
             >
               null
             </span>
+            <span
+              v-else-if="isJsonValue(record[column])"
+              class="font-mono text-sm whitespace-pre"
+            >{{ formatValue(record[column]) }}</span>
             <span v-else class="font-mono text-sm">{{ formatValue(record[column]) }}</span>
           </TableCell>
         </TableRow>

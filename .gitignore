@@ -24,3 +24,5 @@ logs
 !plans/query-editor
 !plans/shacdn
 !plans/readonly
+!plans/autocomplete-column-table-names
+!plans/overview-page-update
