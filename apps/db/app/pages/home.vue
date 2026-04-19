@@ -12,7 +12,7 @@ const showCommandPalette = ref(false)
 // Keyboard shortcut for command palette
 onMounted(() => {
   const handleKeydown = (e: KeyboardEvent) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'p') {
       e.preventDefault()
       showCommandPalette.value = true
     }
@@ -34,8 +34,8 @@ function onTableSelect(table: TableInfo) {
       <div class="flex items-center gap-4">
         <span class="text-lg font-semibold text-foreground">ASO-DB</span>
         <nav class="flex items-center gap-2">
-          <NuxtLink to="/overview">
-            <UiButton variant="default" size="sm">Overview</UiButton>
+          <NuxtLink to="/home">
+            <UiButton variant="default" size="sm">Home</UiButton>
           </NuxtLink>
           <NuxtLink to="/query">
             <UiButton variant="ghost" size="sm">Query</UiButton>
@@ -46,12 +46,23 @@ function onTableSelect(table: TableInfo) {
     </header>
 
     <div class="max-w-7xl mx-auto px-4 py-4">
-      <!-- Header -->
-      <div class="mb-8">
-        <h1 class="text-3xl font-bold text-foreground mb-2">Database Overview</h1>
-        <p class="text-muted-foreground">
+      <!-- Empty state with hint -->
+      <div class="flex flex-col items-center justify-center py-32">
+        <div class="text-6xl mb-6 opacity-20">
+          🗃️
+        </div>
+        <h1 class="text-2xl font-bold text-foreground mb-2">
+          Database Home
+        </h1>
+        <p class="text-muted-foreground mb-8">
           {{ data?.tables.length || 0 }} tables found
         </p>
+
+        <div class="flex items-center gap-2 text-muted-foreground">
+          <span>Press</span>
+          <kbd class="px-2 py-1 bg-muted border rounded text-xs">⌘P</kbd>
+          <span>to open a table</span>
+        </div>
       </div>
 
       <!-- Error state -->
@@ -60,22 +71,6 @@ function onTableSelect(table: TableInfo) {
         class="p-4 rounded-lg border bg-destructive/10 border-destructive text-destructive"
       >
         Failed to load tables: {{ error.message }}
-      </div>
-
-      <!-- Loading state -->
-      <div v-else-if="!data" class="p-8 text-center text-muted-foreground">
-        Loading tables...
-      </div>
-
-      <!-- Tables grid -->
-      <TableGrid v-else :tables="data.tables" />
-
-      <!-- Keyboard hint -->
-      <div class="mt-6 flex items-center gap-4 text-sm text-muted-foreground">
-        <span class="flex items-center gap-2">
-          <kbd class="px-2 py-1 bg-muted border rounded text-xs">⌘K</kbd>
-          to search
-        </span>
       </div>
     </div>
 

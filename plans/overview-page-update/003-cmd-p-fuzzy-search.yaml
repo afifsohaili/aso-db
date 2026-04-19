@@ -1,0 +1,27 @@
+status: todo
+summary: Update command palette with cmd+p shortcut and fuse.js fuzzy search
+references:
+  - files:
+    - apps/db/app/components/command-palette.vue
+    - apps/db/app/pages/home.vue
+    - apps/db/test/components/command-palette.nuxt.spec.ts
+    - apps/db/app/components/ui/dialog/Dialog.vue
+    - apps/db/app/components/ui/dialog/DialogContent.vue
+approach:
+  - Update keyboard shortcut from cmd+k to cmd+p in home.vue
+    - Change hint text from "⌘K to search" to "⌘P to search"
+    - Keep useEventListener(document, 'keydown') pattern
+  - Integrate fuse.js into command-palette.vue for fuzzy matching
+    - Currently uses simple .includes() substring filtering
+    - Replace with Fuse instance over props.tables
+    - Fuse keys: ['name', 'schema'] (schema.name combined would be ideal)
+    - Fuse options: threshold: 0.3, keys: ['name']
+  - Component API stays the same: props (tables, modelValue), emits (update:modelValue, select)
+  - Keep CommandDialog/CommandInput/CommandList/CommandGroup/CommandItem/CommandEmpty from shadcn-vue
+  - Tests to update in command-palette.nuxt.spec.ts:
+    - Keep existing tests for opening, displaying tables, emitting select
+    - Update filtering test: verify fuzzy match behavior (e.g., "us" matches "users")
+    - Test that partial/inexact matches work (e.g., "usr" matches "users")
+    - Ensure empty state still works when no fuzzy matches found
+  - TDD: write updated test expectations first, verify they fail, then implement fuse integration
+  - Keep all existing Command* UI component imports and structure unchanged

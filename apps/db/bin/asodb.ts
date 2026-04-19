@@ -16,7 +16,7 @@ async function waitForServer(port: number, timeout = 30000): Promise<void> {
   
   while (Date.now() - startTime < timeout) {
     try {
-      const response = await fetch(`http://127.0.0.1:${port}/overview`)
+      const response = await fetch(`http://127.0.0.1:${port}/home`)
       if (response.status === 200) {
         return
       }
@@ -88,12 +88,12 @@ async function main() {
     throw error
   }
 
-  const overviewUrl = `http://127.0.0.1:${port}/overview`
-  console.log(`ASO-DB running at ${overviewUrl}`)
+  const homeUrl = `http://127.0.0.1:${port}/home`
+  console.log(`ASO-DB running at ${homeUrl}`)
 
   // Open browser if not disabled
   if (args.openBrowser) {
-    await open(overviewUrl)
+    await open(homeUrl)
   }
 
   // Handle graceful shutdown

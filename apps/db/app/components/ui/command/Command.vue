@@ -2,7 +2,7 @@
 import type { ListboxRootEmits, ListboxRootProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 import { reactiveOmit } from '@vueuse/core'
-import { ListboxRoot, useFilter, useForwardPropsEmits } from 'reka-ui'
+import { ListboxRoot, useForwardPropsEmits } from 'reka-ui'
 import { reactive, ref, watch } from 'vue'
 import { cn } from '@/lib/utils'
 import { provideCommandContext } from '.'
@@ -20,7 +20,6 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
 const allItems = ref<Map<string, string>>(new Map())
 const allGroups = ref<Map<string, Set<string>>>(new Map())
 
-const { contains } = useFilter({ sensitivity: 'base' })
 const filterState = reactive({
   search: '',
   filtered: {
@@ -36,30 +35,20 @@ const filterState = reactive({
 function filterItems() {
   if (!filterState.search) {
     filterState.filtered.count = allItems.value.size
-    // Do nothing, each item will know to show itself because search is empty
     return
   }
 
-  // Reset the groups
+  // Show all items - parent component handles filtering via v-if/v-for
   filterState.filtered.groups = new Set()
   let itemCount = 0
 
-  // Check which items should be included
-  for (const [id, value] of allItems.value) {
-    const score = contains(value, filterState.search)
-    filterState.filtered.items.set(id, score ? 1 : 0)
-    if (score)
-      itemCount++
+  for (const [id] of allItems.value) {
+    filterState.filtered.items.set(id, 1)
+    itemCount++
   }
 
-  // Check which groups have at least 1 item shown
-  for (const [groupId, group] of allGroups.value) {
-    for (const itemId of group) {
-      if (filterState.filtered.items.get(itemId)! > 0) {
-        filterState.filtered.groups.add(groupId)
-        break
-      }
-    }
+  for (const [groupId] of allGroups.value) {
+    filterState.filtered.groups.add(groupId)
   }
 
   filterState.filtered.count = itemCount

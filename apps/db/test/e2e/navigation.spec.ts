@@ -28,20 +28,20 @@ describe('Page Navigation', async () => {
 
   await setupE2E()
 
-  it('redirects from / to /overview', async () => {
+  it('redirects from / to /home', async () => {
     const res = await fetch('/')
-    // Should redirect to /overview
+    // Should redirect to /home
     expect([200, 301, 302, 307, 308]).toContain(res.status)
   })
 
-  it('overview page loads successfully', async () => {
-    const res = await fetch('/overview')
+  it('home page loads successfully', async () => {
+    const res = await fetch('/home')
     expect(res.status).toBe(200)
 
     const html = await res.text()
-    expect(html).toContain('Database Overview')
-    expect(html).toContain('nav_test')
-    expect(html).toContain('sample_table')
+    expect(html).toContain('Database Home')
+    expect(html).toContain('Query')
+    expect(html).toContain('Home')
   })
 
   it('table detail page loads successfully', async () => {

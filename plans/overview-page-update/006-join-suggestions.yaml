@@ -1,0 +1,46 @@
+status: done
+summary: Add join suggestions panel to table detail page
+references:
+  - files:
+    - apps/db/app/pages/table/[schema]/[name].vue
+    - apps/db/server/api/tables/[schema]/[name]/relations.get.ts
+    - apps/db/app/components/table-detail.vue
+    - apps/db/app/components/pagination.vue
+    - apps/db/test/e2e/overview-page.spec.ts
+approach:
+  - Create new component: JoinSuggestions.vue
+    - Props: schema (string), name (string)
+    - Fetches from /api/tables/{schema}/{name}/relations on mount
+    - Displays "joins:" label followed by list of related table buttons
+    - Shows table names as clickable buttons (UiButton)
+    - Clicking a button navigates to /join/{schema}/{name}/{targetSchema}/{targetTable}
+    - Group by direction: outgoing first, then incoming (or just flat list)
+    - If no relations, show nothing (no "joins:" section)
+    - Use shadcn-vue Button component (existing in UI components)
+  - Modify table detail page layout
+    - Current: single column layout with back button, table name, TableDetail, Pagination
+    - New: two-column layout on desktop
+      - Left/main: TableDetail + Pagination (existing)
+      - Right sidebar: JoinSuggestions component (new)
+    - Use CSS grid or flex layout with appropriate breakpoints
+    - Keep responsive: on mobile, joins section appears below table or in a collapsible
+  - Add useFetch call for relations in table detail page
+    - Same pattern as existing records fetch: useFetch with watch on schema/name
+    - Lazy loading acceptable (don't block table records from loading)
+  - Tests:
+    - Update e2e test for table detail page (or create new one)
+      - Create test tables with foreign keys
+      - Visit /table/{schema}/{name}
+      - Assert "joins:" label visible when relations exist
+      - Assert related table names are clickable
+      - Click join button and assert navigation to /join/... route
+    - Create nuxt component test: join-suggestions.nuxt.spec.ts
+      - Mock relations API response
+      - Test: renders related table names
+      - Test: clicking navigates correctly
+      - Test: renders nothing when no relations
+  - TDD: write tests first (both component and e2e), then implement
+  - Visual design:
+    - "joins:" label in muted text
+    - Related tables as small pill/button elements
+    - Positioned on the right side of the table detail page

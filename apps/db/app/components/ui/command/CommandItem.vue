@@ -17,25 +17,11 @@ const delegatedProps = reactiveOmit(props, 'class')
 const forwarded = useForwardPropsEmits(delegatedProps, emits)
 
 const id = useId()
-const { filterState, allItems, allGroups } = useCommand()
+const { allItems, allGroups } = useCommand()
 const groupContext = useCommandGroup()
 
-const isRender = computed(() => {
-  if (!filterState.search) {
-    return true
-  }
-  else {
-    const filteredCurrentItem = filterState.filtered.items.get(id)
-    // If the filtered items is undefined means not in the all times map yet
-    // Do the first render to add into the map
-    if (filteredCurrentItem === undefined) {
-      return true
-    }
-
-    // Check with filter
-    return filteredCurrentItem > 0
-  }
-})
+// Always render - parent component handles filtering via v-if/v-for
+const isRender = computed(() => true)
 
 const itemRef = ref()
 const currentElement = useCurrentElement(itemRef)
@@ -70,7 +56,7 @@ onUnmounted(() => {
     data-slot="command-item"
     :class="cn('data-selected:bg-muted data-selected:text-foreground data-selected:*:[svg]:text-foreground relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none in-data-[slot=dialog-content]:rounded-lg! [&_svg:not([class*=size-])]:size-4 group/command-item data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0', props.class)"
     @select="() => {
-      filterState.search = ''
+      // filterState.search = ''
     }"
   >
     <slot />

@@ -13,6 +13,15 @@ export interface FetchTableRecordsResult {
   columns: string[]
 }
 
+export interface RelationInfo {
+  sourceSchema: string
+  sourceTable: string
+  sourceColumn: string
+  targetSchema: string
+  targetTable: string
+  targetColumn: string
+}
+
 export interface FetchTableRecordsOptions {
   schema: string
   tableName: string

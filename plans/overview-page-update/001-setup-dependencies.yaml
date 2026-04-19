@@ -1,0 +1,18 @@
+status: done
+summary: Install fuse.js and add shadcn-vue Checkbox component
+references:
+  - files:
+    - apps/db/package.json
+    - apps/db/app/components/ui/input/Input.vue
+    - apps/db/app/components/ui/badge/Badge.vue
+approach:
+  - Install fuse.js via pnpm in apps/db (used for fuzzy table search in command palette)
+  - Add shadcn-vue Checkbox component manually following existing UI component patterns
+    - Wrap reka-ui CheckboxRoot/CheckboxIndicator primitives
+    - Use cn() utility from ~/lib/utils for tailwind class merging
+    - Follow the same style as existing components (Input.vue, Badge.vue)
+  - Checkbox component will be used in the column visibility dialog (004)
+    - Path: apps/db/app/components/ui/checkbox/Checkbox.vue
+  - No tests needed for this setup step (will be tested via 004 component tests)
+  - Existing package.json already has shadcn-vue and radix-vue (reka-ui) installed
+  - After adding Checkbox, verify with a quick nuxt build or component test

@@ -52,6 +52,9 @@ importers:
       codemirror:
         specifier: ^6.0.2
         version: 6.0.2
+      fuse.js:
+        specifier: ^7.3.0
+        version: 7.3.0
       lucide-vue-next:
         specifier: ^1.0.0
         version: 1.0.0(vue@3.5.28(typescript@5.9.3))
@@ -4602,6 +4605,10 @@ packages:
 
   fuse.js@7.1.0:
     resolution: {integrity: sha512-trLf4SzuuUxfusZADLINj+dE8clK1frKdmqiJNb1Es75fmI5oY6X2mxLVUciLLjxqw/xr72Dhy+lER6dGd02FQ==}
+    engines: {node: '>=10'}
+
+  fuse.js@7.3.0:
+    resolution: {integrity: sha512-plz8RVjfcDedTGfVngWH1jmJvBvAwi1v2jecfDerbEnMcmOYUEEwKFTHbNoCiYyzaK2Ws8lABkTCcRSqCY1q4w==}
     engines: {node: '>=10'}
 
   fuzzysort@3.1.0:
@@ -9181,7 +9188,7 @@ snapshots:
       debug: 4.4.3
       defu: 6.1.4
       exsolve: 1.0.8
-      fuse.js: 7.1.0
+      fuse.js: 7.3.0
       fzf: 0.5.2
       giget: 3.1.2
       jiti: 2.6.1
@@ -9219,7 +9226,7 @@ snapshots:
       debug: 4.4.3
       defu: 6.1.4
       exsolve: 1.0.8
-      fuse.js: 7.1.0
+      fuse.js: 7.3.0
       fzf: 0.5.2
       giget: 3.1.2
       jiti: 2.6.1
@@ -12999,6 +13006,8 @@ snapshots:
   function-timeout@1.0.2: {}
 
   fuse.js@7.1.0: {}
+
+  fuse.js@7.3.0: {}
 
   fuzzysort@3.1.0: {}
 

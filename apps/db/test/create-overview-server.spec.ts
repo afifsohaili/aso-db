@@ -43,21 +43,21 @@ describe('createOverviewServer', () => {
     servers.length = 0
   })
 
-  it('redirects / to /overview', async () => {
+  it('redirects / to /home', async () => {
     const started = await startTestServer()
     servers.push(started.server)
 
     const response = await fetch(started.url, { redirect: 'manual' })
 
     expect(response.status).toBe(302)
-    expect(response.headers.get('location')).toBe('/overview')
+    expect(response.headers.get('location')).toBe('/home')
   })
 
-  it('renders table names on /overview', async () => {
+  it('renders table names on /home', async () => {
     const started = await startTestServer()
     servers.push(started.server)
 
-    const response = await fetch(`${started.url}/overview`)
+    const response = await fetch(`${started.url}/home`)
     const html = await response.text()
 
     expect(response.status).toBe(200)

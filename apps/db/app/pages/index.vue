@@ -3,8 +3,8 @@ definePageMeta({
   layout: 'default',
 })
 
-// Redirect to overview page
-await navigateTo('/overview', { replace: true })
+// Redirect to home page
+await navigateTo('/home', { replace: true })
 </script>
 
 <template>

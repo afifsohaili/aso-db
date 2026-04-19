@@ -85,7 +85,7 @@ onMounted(() => {
   window.addEventListener('mouseup', stopResize)
 
   const handleKeydown = (e: KeyboardEvent) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'p') {
       e.preventDefault()
       showCommandPalette.value = true
     }
@@ -274,8 +274,8 @@ function onTableSelect(table: TableInfo) {
       <div class="flex items-center gap-4">
         <span class="text-lg font-semibold text-foreground">ASO-DB</span>
         <nav class="flex items-center gap-2">
-          <NuxtLink to="/overview">
-            <Button variant="ghost" size="sm">Overview</Button>
+          <NuxtLink to="/home">
+            <Button variant="ghost" size="sm">Home</Button>
           </NuxtLink>
           <NuxtLink to="/query">
             <Button variant="default" size="sm">Query</Button>

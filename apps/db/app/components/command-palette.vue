@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import Fuse from 'fuse.js'
 import type { TableInfo } from '~/shared/types/table'
 import DatabaseIcon from '~icons/lucide/database'
 import {
@@ -35,17 +36,21 @@ function selectTable(table: TableInfo) {
   close()
 }
 
-// Simple fuzzy search
+// Fuse.js fuzzy search
+const fuse = computed(() => {
+  return new Fuse(props.tables, {
+    keys: ['schema', 'name'],
+    threshold: 0.3,
+    includeScore: false,
+  })
+})
+
 const filteredTables = computed(() => {
   if (!searchQuery.value.trim()) {
     return props.tables
   }
 
-  const query = searchQuery.value.toLowerCase()
-  return props.tables.filter((table) => {
-    const fullName = `${table.schema}.${table.name}`.toLowerCase()
-    return fullName.includes(query)
-  })
+  return fuse.value.search(searchQuery.value).map(result => result.item)
 })
 
 // Focus input when opened
@@ -69,11 +74,21 @@ watch(() => props.modelValue, (isOpen) => {
       placeholder="Search tables..."
     />
     <CommandList>
-      <CommandEmpty>No tables found</CommandEmpty>
-      <CommandGroup heading="Tables">
+      <div
+        v-if="filteredTables.length === 0 && searchQuery"
+        class="py-6 text-center text-sm"
+        data-testid="empty-state"
+      >
+        No tables found
+      </div>
+      <CommandGroup
+        v-if="filteredTables.length > 0"
+        heading="Tables"
+      >
         <CommandItem
           v-for="table in filteredTables"
           :key="`${table.schema}.${table.name}`"
+          :value="table.name"
           data-testid="table-item"
           @select="selectTable(table)"
         >

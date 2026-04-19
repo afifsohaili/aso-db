@@ -1,0 +1,44 @@
+status: done
+summary: Add column visibility toggle with gear icon and URL param persistence
+references:
+  - files:
+    - apps/db/app/components/table-detail.vue
+    - apps/db/app/pages/table/[schema]/[name].vue
+    - apps/db/app/components/ui/dialog/Dialog.vue
+    - apps/db/app/components/ui/dialog/DialogContent.vue
+    - apps/db/app/components/ui/input/Input.vue
+    - apps/db/app/components/ui/checkbox/Checkbox.vue
+    - apps/db/app/components/ui/scroll-area/ScrollArea.vue
+    - apps/db/test/components/table-detail.nuxt.spec.ts
+    - apps/db/server/api/tables/[schema]/[name].get.ts
+approach:
+  - Create new component: ColumnVisibilityDialog.vue
+    - Props: columns (string[]), visibleColumns (string[]), modelValue (boolean)
+    - Emits: update:visibleColumns, update:modelValue
+    - UI: Dialog with search input (filter columns), ScrollArea for list, Checkbox per column
+    - Use reka-ui Dialog primitives following existing Dialog.vue/DialogContent.vue patterns
+    - Search input filters column list in real-time
+  - Modify TableDetail.vue to accept visibleColumns prop
+    - Add prop: visibleColumns?: string[] (default: all columns)
+    - Filter rendered columns based on visibleColumns
+    - If no visibleColumns prop or empty array, show all columns
+    - Keep existing sorting behavior on visible columns only
+  - Modify table detail page to manage column visibility state
+    - Read initial visible columns from URL query param: ?cols=id,name,email
+    - Parse comma-separated column names from URL
+    - Sync visible columns back to URL when changed (useRouter push with query)
+    - Add gear icon button next to table name heading
+    - Clicking gear opens ColumnVisibilityDialog
+  - Tests to update in table-detail.nuxt.spec.ts:
+    - Add test: renders only visible columns when visibleColumns prop is provided
+    - Add test: renders all columns when visibleColumns is empty/undefined
+    - Add test: sorting still works on visible columns only
+  - Create new test: column-visibility-dialog.nuxt.spec.ts
+    - Test: dialog opens on modelValue=true
+    - Test: checkboxes reflect visibleColumns state
+    - Test: emits update:visibleColumns when toggled
+    - Test: search filters column list
+  - TDD: write tests first for TableDetail visible columns behavior, then implement
+  - URL persistence uses Nuxt's useRoute().query and useRouter().push
+    - Parse ?cols=col1,col2 on page load
+    - Update URL when dialog closes with new selection

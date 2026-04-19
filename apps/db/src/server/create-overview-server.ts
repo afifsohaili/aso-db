@@ -1,7 +1,7 @@
 import { createServer } from 'node:http'
 
 import type { TableInfo } from './table-info'
-import { renderOverviewHtml } from './render-overview-html'
+import { renderHomeHtml } from './render-overview-html'
 import { renderTableHtml } from './render-table-html'
 import { fetchTableRecords } from '../db/fetch-table-records'
 
@@ -18,7 +18,7 @@ export function createOverviewServer(options: CreateOverviewServerOptions) {
 
     try {
       if (requestUrl.pathname === '/') {
-        response.writeHead(302, { Location: '/overview' })
+        response.writeHead(302, { Location: '/home' })
         response.end()
         return
       }
@@ -31,11 +31,11 @@ export function createOverviewServer(options: CreateOverviewServerOptions) {
         return
       }
 
-      if (requestUrl.pathname === '/overview') {
+      if (requestUrl.pathname === '/home') {
         const tables = await options.getTables()
 
         response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
-        response.end(renderOverviewHtml(tables))
+        response.end(renderHomeHtml(tables))
         return
       }
 

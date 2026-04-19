@@ -1,0 +1,49 @@
+status: done
+summary: Create foreign key relations API endpoint
+references:
+  - files:
+    - apps/db/server/api/tables/[schema]/[name].get.ts
+    - apps/db/server/api/tables.get.ts
+    - apps/db/server/utils/db.ts
+    - apps/db/shared/types/table.ts
+    - apps/db/server/utils/tables.ts
+    - apps/db/test/create-overview-server.spec.ts
+approach:
+  - Create new API route: GET /api/tables/{schema}/{name}/relations
+    - Path: apps/db/server/api/tables/[schema]/[name]/relations.get.ts
+    - Same identifier validation as tables/[schema]/[name].get.ts: /^[a-zA-Z_][a-zA-Z0-9_$]*$/
+    - Query information_schema for foreign key constraints:
+      - Query information_schema.table_constraints + key_column_usage + constraint_column_usage
+      - Or use information_schema.referential_constraints + key_column_usage
+      - Need both outgoing FKs (this table references others) and incoming FKs (others reference this table)
+    - Return type: { relations: RelationInfo[] }
+      - RelationInfo = { sourceSchema, sourceTable, sourceColumn, targetSchema, targetTable, targetColumn, direction: 'outgoing' | 'incoming' }
+  - Reuse getPool() from server/utils/db.ts for database connection
+  - Reuse listTables() to validate that target tables exist
+  - Tests: create new file apps/db/test/server/relations-api.spec.ts
+    - Create test schema with tables that have foreign keys
+    - Test: returns outgoing relations (table A -> table B)
+    - Test: returns incoming relations (table B <- table A)
+    - Test: returns empty array for table with no relations
+    - Test: returns 400 for invalid identifier
+    - Use setupE2E pattern from test/e2e/utils.ts or create a simpler server test
+  - TDD: write API tests first, confirm they fail, then implement endpoint
+  - The API will be consumed by JoinSuggestions component (006)
+  - Postgres information_schema query pattern:
+    ```sql
+    SELECT
+      tc.constraint_name,
+      kcu.table_schema AS source_schema,
+      kcu.table_name AS source_table,
+      kcu.column_name AS source_column,
+      ccu.table_schema AS target_schema,
+      ccu.table_name AS target_table,
+      ccu.column_name AS target_column
+    FROM information_schema.table_constraints tc
+    JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name
+    JOIN information_schema.constraint_column_usage ccu ON tc.constraint_name = ccu.constraint_name
+    WHERE tc.constraint_type = 'FOREIGN KEY'
+    ```
+  - Note: Need to query for both directions:
+    - Outgoing: WHERE kcu.table_name = :name AND kcu.table_schema = :schema
+    - Incoming: WHERE ccu.table_name = :name AND ccu.table_schema = :schema

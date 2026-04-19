@@ -1,10 +1,21 @@
 <script setup lang="ts">
-import type { FetchTableRecordsResult } from '~/shared/types/table'
+import type { FetchTableRecordsResult, RelationInfo } from '~/shared/types/table'
 import type { SortState } from '~/components/table-detail.vue'
 
 const route = useRoute()
+const router = useRouter()
 const schema = route.params.schema as string
 const tableName = route.params.name as string
+
+// Column visibility from URL
+const visibleColumns = computed(() => {
+  const cols = route.query.cols
+  if (!cols) return undefined
+  if (Array.isArray(cols)) return cols as string[]
+  return cols.split(',').filter(Boolean)
+})
+
+const showColumnDialog = ref(false)
 
 // Pagination state
 const page = ref(1)
@@ -27,6 +38,11 @@ const { data, error, refresh } = await useFetch<FetchTableRecordsResult>(
   },
 )
 
+// Fetch relations
+const { data: relationsData } = await useFetch<{ relations: RelationInfo[] }>(
+  () => `/api/tables/${schema}/${tableName}/relations`,
+)
+
 // Watch for route changes and reset pagination/sort
 watch(() => [route.params.schema, route.params.name], () => {
   page.value = 1
@@ -34,7 +50,7 @@ watch(() => [route.params.schema, route.params.name], () => {
 })
 
 function goBack() {
-  navigateTo('/overview')
+  navigateTo('/home')
 }
 
 function prevPage() {
@@ -57,6 +73,21 @@ function updateLimit(newLimit: number) {
 function updateSort(newSort: SortState) {
   sort.value = newSort
   page.value = 1 // Reset to first page when sorting changes
+}
+
+function updateVisibleColumns(cols: string[]) {
+  const query = { ...route.query }
+  if (cols.length === 0 || (data.value && cols.length === data.value.columns.length)) {
+    delete query.cols
+  }
+  else {
+    query.cols = cols.join(',')
+  }
+  router.replace({ query })
+}
+
+function navigateToJoin(relation: RelationInfo) {
+  navigateTo(`/join/${relation.sourceSchema}/${relation.sourceTable}/${relation.targetSchema}/${relation.targetTable}`)
 }
 </script>
 
@@ -81,6 +112,15 @@ function updateSort(newSort: SortState) {
             <span class="text-gray-600">/</span>
             <span class="text-xl font-semibold text-white">{{ tableName }}</span>
           </div>
+
+          <button
+            v-if="data"
+            class="ml-auto p-2 text-gray-400 hover:text-white transition-colors"
+            data-testid="column-visibility-toggle"
+            @click="showColumnDialog = true"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
         </div>
       </div>
     </header>
@@ -104,6 +144,7 @@ function updateSort(newSort: SortState) {
           :records="data.records"
           :total-count="data.totalCount"
           :sort="sort"
+          :visible-columns="visibleColumns"
           @update:sort="updateSort"
         />
 
@@ -114,6 +155,21 @@ function updateSort(newSort: SortState) {
           @prev="prevPage"
           @next="nextPage"
           @update:limit="updateLimit"
+        />
+
+        <JoinSuggestions
+          v-if="relationsData && relationsData.relations.length > 0"
+          :relations="relationsData.relations"
+          :schema="schema"
+          :table-name="tableName"
+          @select="navigateToJoin"
+        />
+
+        <ColumnVisibilityDialog
+          v-model="showColumnDialog"
+          :columns="data.columns"
+          :visible-columns="visibleColumns || data.columns"
+          @update:visible-columns="updateVisibleColumns"
         />
       </div>
     </main>

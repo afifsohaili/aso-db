@@ -1,0 +1,59 @@
+status: done
+summary: Create combined join view page route
+references:
+  - files:
+    - apps/db/app/pages/table/[schema]/[name].vue
+    - apps/db/server/api/query/execute.post.ts
+    - apps/db/server/api/tables/[schema]/[name]/relations.get.ts
+    - apps/db/app/components/table-detail.vue
+    - apps/db/app/components/pagination.vue
+    - apps/db/app/pages/query.vue
+    - apps/db/shared/types/table.ts
+    - apps/db/test/e2e/overview-page.spec.ts
+approach:
+  - Create new page route: /join/{schema}/{table}/{targetSchema}/{targetTable}
+    - Path: apps/db/app/pages/join/[schema]/[name]/[targetSchema]/[targetTable].vue
+    - All four parameters are URL path segments (not query params)
+  - Page behavior:
+    - Title format: "{table} + {targetTable}" (e.g., "users + organisations")
+    - Fetches relation info from /api/tables/{schema}/{name}/relations
+    - Finds the matching relation to determine join columns
+    - Generates JOIN SQL query using the relation info
+    - Executes JOIN query via POST /api/query/execute
+    - Displays results using TableDetail component
+    - Column format: "sourceTable.column | sourceTable.column | ... | targetTable.column | ..."
+  - JOIN SQL generation:
+    - Simple INNER JOIN: SELECT * FROM {schema}.{table} JOIN {targetSchema}.{targetTable} ON {table}.{sourceColumn} = {targetTable}.{targetColumn}
+    - Limit to reasonable number of rows (use existing pagination)
+  - Page layout similar to table detail page but with:
+    - Different title: "users + organisations"
+    - Back button goes to /table/{schema}/{table} (source table)
+    - Column visibility gear icon (reuse 004 ColumnVisibilityDialog)
+    - No join suggestions panel (or maybe show related joins from both tables)
+  - URL query params support:
+    - ?cols=... for column visibility (reuse 004 system)
+    - ?page=... and ?limit=... for pagination
+    - ?sort=... and ?order=... for sorting
+  - Tests:
+    - Create e2e test: join-view.spec.ts
+      - Create test schema with two tables and a foreign key
+      - Visit /join/{schema}/{table}/{targetSchema}/{targetTable}
+      - Assert page title contains "table1 + table2"
+      - Assert combined columns visible
+      - Assert records from both tables shown
+      - Test column visibility via ?cols= param
+      - Test pagination works
+    - Create server/API test for JOIN query execution
+      - Verify generated SQL is correct
+      - Verify results contain columns from both tables
+  - TDD: write e2e test first, confirm fails, then implement page
+  - Reuse existing components:
+    - TableDetail.vue for displaying records
+    - Pagination.vue for pagination controls
+    - ColumnVisibilityDialog.vue for column toggling
+  - Error handling:
+    - If no relation found between tables, show error message
+    - If join query fails, display error from execute.post.ts response
+    - Handle case where target table doesn't exist
+  - Navigation from join suggestions:
+    - JoinSuggestions.vue (006) navigates to this route on click

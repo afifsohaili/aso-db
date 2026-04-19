@@ -18,7 +18,7 @@ function escapeJsString(value: string) {
     .replaceAll('\r', '\\r')
 }
 
-export function renderOverviewHtml(tables: TableInfo[]) {
+export function renderHomeHtml(tables: TableInfo[]) {
   const tablesJson = JSON.stringify(tables)
 
   return `<!DOCTYPE html>
@@ -26,7 +26,7 @@ export function renderOverviewHtml(tables: TableInfo[]) {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ASO-DB Overview</title>
+    <title>ASO-DB Home</title>
     <style>
       :root {
         color-scheme: dark;

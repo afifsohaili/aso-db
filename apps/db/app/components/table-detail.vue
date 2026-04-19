@@ -21,6 +21,7 @@ interface Props {
     column?: string
     direction?: 'asc' | 'desc'
   }
+  visibleColumns?: string[]
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -29,6 +30,13 @@ const props = withDefaults(defineProps<Props>(), {
     column: undefined,
     direction: 'asc',
   }),
+})
+
+const displayColumns = computed(() => {
+  if (!props.visibleColumns || props.visibleColumns.length === 0) {
+    return props.columns
+  }
+  return props.columns.filter(col => props.visibleColumns!.includes(col))
 })
 
 const emit = defineEmits<{
@@ -100,7 +108,7 @@ function isJsonValue(value: unknown): boolean {
       <TableHeader>
         <TableRow>
           <TableHead
-            v-for="column in columns"
+            v-for="column in displayColumns"
             :key="column"
             class="cursor-pointer select-none"
             @click="toggleSort(column)"
@@ -118,7 +126,7 @@ function isJsonValue(value: unknown): boolean {
 
       <TableBody>
         <TableRow v-for="(record, rowIndex) in records" :key="rowIndex">
-          <TableCell v-for="column in columns" :key="column">
+          <TableCell v-for="column in displayColumns" :key="column">
             <Badge v-if="isBooleanValue(record[column])" variant="secondary">
               {{ formatValue(record[column]) }}
             </Badge>
@@ -137,7 +145,7 @@ function isJsonValue(value: unknown): boolean {
         </TableRow>
 
         <TableRow v-if="records.length === 0">
-          <TableCell :colspan="columns.length" class="h-24 text-center">
+          <TableCell :colspan="displayColumns.length || 1" class="h-24 text-center">
             No records found
           </TableCell>
         </TableRow>

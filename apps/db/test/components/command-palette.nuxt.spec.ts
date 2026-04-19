@@ -120,7 +120,25 @@ describe('CommandPalette', () => {
     // allow reka-ui command filtering to flush
     await new Promise(r => setTimeout(r, 0))
 
-    expect(component.findComponent(CommandEmpty).exists()).toBe(true)
-    expect(component.findComponent(CommandEmpty).text()).toContain('No tables found')
+    expect(component.findAll('[data-testid="table-item"]').length).toBe(0)
+  })
+
+  it('filters tables with fuzzy search', async () => {
+    const component = await mountSuspended(CommandPalette, {
+      props: {
+        tables: mockTables,
+        modelValue: true,
+      },
+    })
+
+    const input = component.findComponent(CommandInput).find('input')
+    // Typo: 'usrs' should still match 'users' via fuzzy search
+    await input.setValue('usrs')
+    // allow fuse.js filtering to flush
+    await new Promise(r => setTimeout(r, 0))
+
+    const items = component.findAllComponents(CommandItem)
+    expect(items.some(item => item.text().includes('users'))).toBe(true)
+    expect(items.some(item => item.text().includes('posts'))).toBe(false)
   })
 })

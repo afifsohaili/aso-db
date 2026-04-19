@@ -1,0 +1,30 @@
+status: done
+summary: Rename /overview to /home, delete TableGrid component, update nav
+references:
+  - files:
+    - apps/db/app/pages/overview.vue
+    - apps/db/app/pages/index.vue
+    - apps/db/app/layouts/default.vue
+    - apps/db/app/components/table-grid.vue
+    - apps/db/test/components/table-grid.nuxt.spec.ts
+    - apps/db/test/e2e/overview-page.spec.ts
+    - apps/db/test/create-overview-server.spec.ts
+approach:
+  - Rename apps/db/app/pages/overview.vue → apps/db/app/pages/home.vue
+    - Change page title from "Database Overview" to "Database Home"
+    - Remove TableGrid component usage (keep header nav, cmd+p hint)
+    - Keep the header nav but update "Overview" link text to "Home"
+  - Update apps/db/app/pages/index.vue redirect: /overview → /home
+  - Update table detail page back button and any /overview references → /home
+  - Delete apps/db/app/components/table-grid.vue
+  - Delete apps/db/test/components/table-grid.nuxt.spec.ts
+  - Rename apps/db/test/e2e/overview-page.spec.ts → home-page.spec.ts
+    - Update assertions: "Database Overview" → "Database Home"
+    - Update route checks: /overview → /home
+  - Update apps/db/test/create-overview-server.spec.ts
+    - Change redirect assertion from /overview to /home
+    - Update "Database Overview" text assertions
+  - TDD: update existing tests first, run them to confirm red, then make changes
+  - Keep the cmd+p keyboard shortcut registration on the home page
+    - Currently uses useEventListener on document for keydown
+    - Update from "⌘K to search" hint to "⌘P to search"
