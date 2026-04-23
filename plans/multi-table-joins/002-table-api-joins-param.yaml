@@ -1,0 +1,24 @@
+status: todo
+summary: Modify table API to accept ?joins= query param and generate multi-table JOIN SQL
+references:
+  - files:
+    - apps/db/server/api/tables/[schema]/[name].get.ts
+    - apps/db/server/api/tables/[schema]/[name]/relations.get.ts
+    - apps/db/server/utils/db.ts
+    - apps/db/shared/types/table.ts
+    - apps/db/test/e2e/tables.get.spec.ts
+    - apps/db/test/e2e/relations-api.spec.ts
+    - apps/db/test/unit/server/utils/tables.spec.ts
+approach:
+  - Add joins query param: const joins = getQuery(event).joins as string | undefined
+  - Parse joins comma-separated: joins?.split(',').filter(Boolean) || []
+  - Validate each join table name with same regex /^[a-zA-Z_][a-zA-Z0-9_$]*$/
+  - Enforce max 4 tables total (base + joins): throw createError if exceeded
+  - Fetch relations from information_schema to find FK constraints between tables
+  - Build JOIN chain: start with base table, LEFT JOIN each joined table on matching FK
+  - Use existing relations.get.ts SQL pattern for fetching FK info
+  - Column handling: prefix all columns with table name (users.id, branch_user.user_id)
+  - Return { records, totalCount, columns } where columns are prefixed like "users.id"
+  - Tests: add e2e test for /api/tables/public/parents?joins=children with FK setup
+  - Tests: verify 400 error when joins > 3 (total 4 tables)
+  - Tests: verify prefixed columns in response

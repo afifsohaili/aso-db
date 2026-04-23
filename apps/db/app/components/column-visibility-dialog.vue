@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import Fuse from 'fuse.js'
 import {
   Dialog,
   DialogContent,
@@ -10,7 +11,6 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { XIcon } from 'lucide-vue-next'
 
 interface Props {
   modelValue: boolean
@@ -43,10 +43,18 @@ watch(() => props.modelValue, (open) => {
   }
 })
 
+// Fuse.js for fuzzy search
+const fuse = computed(() => {
+  return new Fuse(props.columns, {
+    threshold: 0.3,
+    includeScore: false,
+  })
+})
+
+// Columns filtered by search (fuzzy)
 const filteredColumns = computed(() => {
   if (!searchQuery.value.trim()) return props.columns
-  const q = searchQuery.value.toLowerCase()
-  return props.columns.filter(col => col.toLowerCase().includes(q))
+  return fuse.value.search(searchQuery.value).map(result => result.item)
 })
 
 function toggleColumn(col: string) {

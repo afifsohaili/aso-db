@@ -2,21 +2,12 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import type { QueryResult, SavedQuery } from '~/shared/types/query'
 import type { TableInfo } from '~/shared/types/table'
-import ThemeToggle from '@monorepo/theme/components/ThemeToggle.vue'
 import Minimize2Icon from '~icons/lucide/minimize-2'
 import ExpandIcon from '~icons/lucide/expand'
 import PanelLeftCloseIcon from '~icons/lucide/panel-left-close'
 import PanelLeftOpenIcon from '~icons/lucide/panel-left-open'
 import AlertTriangleIcon from '~icons/lucide/alert-triangle'
-import { Badge } from '~/components/ui/badge'
-import { Button } from '~/components/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '~/components/ui/popover'
-import { Separator } from '~/components/ui/separator'
 
 // Fetch tables for command palette
 const { data: tablesData } = await useFetch<{ tables: TableInfo[] }>('/api/tables')
@@ -37,11 +28,7 @@ const durationMs = ref(0)
 const sidebarCollapsed = ref(false)
 const resultsMaximized = ref(false)
 const showCommandPalette = ref(false)
-const currentConfig = ref<{ host?: string, port?: number, database?: string } | null>(null)
 const sessionId = ref<string | null>(null)
-
-const runtimeConfig = useRuntimeConfig()
-const isReadOnly = computed(() => runtimeConfig.public.isReadOnly)
 
 // Layout refs
 const containerRef = ref<HTMLDivElement | null>(null)
@@ -132,19 +119,11 @@ async function saveSession() {
   })
 }
 
-async function loadConfig() {
-  const { data } = await useFetch<{ host: string, port: number, database: string }>('/api/config')
-  if (data.value) {
-    currentConfig.value = data.value
-  }
-}
-
 onMounted(async () => {
   await Promise.all([
     loadSavedQueries(),
     loadHistory(),
     loadSession(),
-    loadConfig(),
   ])
 })
 
@@ -269,53 +248,7 @@ function onTableSelect(table: TableInfo) {
 
 <template>
   <div class="h-screen flex flex-col bg-background">
-    <!-- Header -->
-    <header class="flex items-center justify-between px-4 py-3 border-b bg-background">
-      <div class="flex items-center gap-4">
-        <span class="text-lg font-semibold text-foreground">ASO-DB</span>
-        <nav class="flex items-center gap-2">
-          <NuxtLink to="/home">
-            <Button variant="ghost" size="sm">Home</Button>
-          </NuxtLink>
-          <NuxtLink to="/query">
-            <Button variant="default" size="sm">Query</Button>
-          </NuxtLink>
-        </nav>
-      </div>
-
-      <div class="flex items-center gap-3">
-        <Badge v-if="isReadOnly" variant="secondary">Read-only</Badge>
-        <Badge v-else variant="destructive">Write mode</Badge>
-
-        <Popover>
-          <PopoverTrigger as-child>
-            <Button variant="ghost" size="sm">Connection</Button>
-          </PopoverTrigger>
-          <PopoverContent class="w-64" align="end">
-            <div class="space-y-2">
-              <div class="text-sm font-medium">Connection Details</div>
-              <Separator />
-              <div v-if="currentConfig" class="space-y-1 text-sm">
-                <div class="flex justify-between">
-                  <span class="text-muted-foreground">Host:</span>
-                  <span>{{ currentConfig.host }}</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-muted-foreground">Port:</span>
-                  <span>{{ currentConfig.port }}</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-muted-foreground">Database:</span>
-                  <span>{{ currentConfig.database }}</span>
-                </div>
-              </div>
-            </div>
-          </PopoverContent>
-        </Popover>
-
-        <ThemeToggle />
-      </div>
-    </header>
+    <AppHeader />
 
     <!-- Write mode warning -->
     <Alert v-if="!isReadOnly" variant="destructive" class="rounded-none border-x-0 border-t-0">

@@ -1,0 +1,16 @@
+status: done
+summary: Delete /join/ route and related files
+references:
+  - files:
+    - apps/db/app/pages/join/[schema]/[name]/[targetSchema]/[targetTable].vue
+    - apps/db/test/e2e/join-view.spec.ts
+    - apps/db/app/pages/table/[schema]/[name].vue
+    - apps/db/app/components/join-suggestions.vue
+    - apps/db/test/components/join-suggestions.nuxt.spec.ts
+approach:
+  - Remove join page directory: rm -rf apps/db/app/pages/join/
+  - Remove join-view e2e test: rm apps/db/test/e2e/join-view.spec.ts
+  - Update join-suggestions.vue: change emitted 'select' event to pass join target info instead of navigating to /join/ route
+  - Update table-detail page: remove any references to /join/ navigation
+  - Verify no other files reference /join/ route
+  - Tests: join-view.spec.ts deleted; join-suggestions test updated to verify new emit behavior

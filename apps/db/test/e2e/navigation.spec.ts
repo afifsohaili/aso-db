@@ -46,6 +46,9 @@ describe('Page Navigation', async () => {
 
   it('table detail page loads successfully', async () => {
     const res = await fetch('/table/nav_test/sample_table')
+    if (res.status !== 200) {
+      throw new Error(`Status ${res.status}: ${await res.text()}`)
+    }
     expect(res.status).toBe(200)
 
     const html = await res.text()

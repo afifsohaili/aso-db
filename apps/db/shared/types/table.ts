@@ -27,4 +27,7 @@ export interface FetchTableRecordsOptions {
   tableName: string
   page: number
   limit: number
+  sort?: string
+  order?: 'asc' | 'desc' | null
+  joins?: string[]
 }

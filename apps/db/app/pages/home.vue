@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import type { TableInfo } from '~/shared/types/table'
-import ThemeToggle from '@monorepo/theme/components/ThemeToggle.vue'
-import UiButton from '~/components/ui/button/Button.vue'
 
 // Fetch tables from API
 const { data, error } = await useFetch<{ tables: TableInfo[] }>('/api/tables')
@@ -30,20 +28,7 @@ function onTableSelect(table: TableInfo) {
 
 <template>
   <div class="bg-background">
-    <header class="flex items-center justify-between px-4 py-3 border-b bg-background mb-6">
-      <div class="flex items-center gap-4">
-        <span class="text-lg font-semibold text-foreground">ASO-DB</span>
-        <nav class="flex items-center gap-2">
-          <NuxtLink to="/home">
-            <UiButton variant="default" size="sm">Home</UiButton>
-          </NuxtLink>
-          <NuxtLink to="/query">
-            <UiButton variant="ghost" size="sm">Query</UiButton>
-          </NuxtLink>
-        </nav>
-      </div>
-      <ThemeToggle />
-    </header>
+    <AppHeader />
 
     <div class="max-w-7xl mx-auto px-4 py-4">
       <!-- Empty state with hint -->

@@ -1,0 +1,19 @@
+status: todo
+summary: Update table detail page to read ?joins= and handle add/remove
+references:
+  - files:
+    - apps/db/app/pages/table/[schema]/[name].vue
+    - apps/db/app/components/join-suggestions.vue
+    - apps/db/app/components/table-detail.vue
+    - apps/db/test/e2e/home-page.spec.ts
+    - apps/db/test/components/join-suggestions.nuxt.spec.ts
+approach:
+  - Read joins from URL: const joins = computed(() => route.query.joins?.toString().split(',').filter(Boolean) || [])
+  - Pass joins to useFetch: add joins to query params in fetch URL
+  - Add addJoin(tableName) function: router.replace({ query: { ...route.query, joins: [...joins.value, tableName].join(',') } })
+  - Add removeJoin(tableName) function: router.replace({ query: { ...route.query, joins: joins.value.filter(j => j !== tableName).join(',') } })
+  - Pass joinedTables to JoinSuggestions: <JoinSuggestions :joined-tables="joins.value" />
+  - Handle remove events from JoinSuggestions: @remove="removeJoin"
+  - Column visibility: read cols from URL, prefix-aware (users.id vs branch_user.user_id)
+  - Tests: e2e test for adding join via query param, verify table updates
+  - Tests: e2e test for removing join, verify table updates

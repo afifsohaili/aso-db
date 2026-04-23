@@ -1,0 +1,18 @@
+status: todo
+summary: Update JoinSuggestions component with add/remove and × button
+references:
+  - files:
+    - apps/db/app/components/join-suggestions.vue
+    - apps/db/app/pages/table/[schema]/[name].vue
+    - apps/db/test/components/join-suggestions.nuxt.spec.ts
+approach:
+  - Add joinedTables prop: string[] of already-joined table names
+  - Add @remove emit: emit('remove', tableName) when × clicked
+  - Keep @add emit: emit('add', { sourceSchema, sourceTable, targetSchema, targetTable })
+  - Show × button next to already-joined tables (check if table is in joinedTables)
+  - Show + button for tables not yet joined
+  - Deduplicate by target table name (already done)
+  - Tests: verify × button appears for joined tables
+  - Tests: verify + button appears for non-joined tables
+  - Tests: verify @remove emit with correct table name
+  - Tests: verify @add emit still works

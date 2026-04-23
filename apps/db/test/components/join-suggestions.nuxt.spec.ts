@@ -63,26 +63,23 @@ describe('join-suggestions', () => {
     expect(texts).toContain('profiles')
   })
 
-  it('emits select event when clicking a join target', async () => {
+  it('emits add event when clicking a join target', async () => {
     const component = await mountSuspended(JoinSuggestions, {
       props: {
         relations,
         schema: 'public',
         tableName: 'users',
+        joinedTables: [],
       },
     })
 
-    const joinTargets = component.findAll('[data-testid="join-target"]')
-    await joinTargets[0]!.trigger('click')
+    const addButton = component.find('[data-testid="add-join"]')
+    await addButton.trigger('click')
 
     const emitted = component.emitted()
-    expect(emitted['select']).toBeDefined()
-    expect(emitted['select']).toHaveLength(1)
-    expect(emitted['select']![0]![0]).toMatchObject({
-      sourceSchema: 'public',
-      sourceTable: 'users',
-      targetTable: 'organisations',
-    })
+    expect(emitted['add']).toBeDefined()
+    expect(emitted['add']).toHaveLength(1)
+    expect(emitted['add']![0]![0]).toBe('organisations')
   })
 
   it('shows no relations message when empty', async () => {

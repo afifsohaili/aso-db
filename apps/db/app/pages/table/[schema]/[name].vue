@@ -1,6 +1,17 @@
 <script setup lang="ts">
 import type { FetchTableRecordsResult, RelationInfo } from '~/shared/types/table'
 import type { SortState } from '~/components/table-detail.vue'
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb'
+import { Button } from '@/components/ui/button'
+import { Separator } from '@/components/ui/separator'
+import ArrowLeftIcon from '~icons/heroicons/arrow-left'
+import SettingsIcon from '~icons/heroicons/cog-6-tooth'
 
 const route = useRoute()
 const router = useRouter()
@@ -30,18 +41,64 @@ const sortQuery = computed(() => {
   return `&sort=${sort.value.column}&order=${sort.value.direction}`
 })
 
+// Joined tables from URL query param
+const joinedTables = computed(() => {
+  const joins = route.query.joins
+  if (!joins) return [] as string[]
+  if (Array.isArray(joins)) return joins as string[]
+  return joins.split(',').filter(Boolean)
+})
+
+const MAX_JOINS = 3
+const maxReached = computed(() => joinedTables.value.length >= MAX_JOINS)
+
+// Toast notification
+const toast = ref<{ message: string; visible: boolean }>({ message: '', visible: false })
+let toastTimeout: ReturnType<typeof setTimeout> | null = null
+
+function showToast(message: string) {
+  toast.value = { message, visible: true }
+  if (toastTimeout) clearTimeout(toastTimeout)
+  toastTimeout = setTimeout(() => {
+    toast.value.visible = false
+  }, 3000)
+}
+
+// Build joins query string
+const joinsQuery = computed(() => {
+  if (joinedTables.value.length === 0) return ''
+  return `&joins=${joinedTables.value.join(',')}`
+})
+
 // Fetch table data
 const { data, error, refresh } = await useFetch<FetchTableRecordsResult>(
-  () => `/api/tables/${schema}/${tableName}?page=${page.value}&limit=${limit.value}${sortQuery.value}`,
+  () => `/api/tables/${schema}/${tableName}?page=${page.value}&limit=${limit.value}${sortQuery.value}${joinsQuery.value}`,
   {
-    watch: [page, limit, sortQuery],
+    watch: [page, limit, sortQuery, joinsQuery],
   },
 )
 
-// Fetch relations
-const { data: relationsData } = await useFetch<{ relations: RelationInfo[] }>(
-  () => `/api/tables/${schema}/${tableName}/relations`,
+// Fetch relations for base table + all joined tables (transitive joins)
+const { data: allRelationsData } = await useAsyncData(
+  () => `relations-${schema}-${tableName}-${joinedTables.value.join(',')}`,
+  async () => {
+    const tablesToFetch = [tableName, ...joinedTables.value]
+    const results = await Promise.all(
+      tablesToFetch.map(t =>
+        $fetch<{ relations: RelationInfo[] }>(`/api/tables/${schema}/${t}/relations`),
+      ),
+    )
+    return {
+      relations: results.flatMap(r => r.relations),
+    }
+  },
+  {
+    watch: [joinedTables],
+  },
 )
+
+// All visible tables (base + joined) for transitive join discovery
+const visibleTables = computed(() => [tableName, ...joinedTables.value])
 
 // Watch for route changes and reset pagination/sort
 watch(() => [route.params.schema, route.params.name], () => {
@@ -86,55 +143,93 @@ function updateVisibleColumns(cols: string[]) {
   router.replace({ query })
 }
 
-function navigateToJoin(relation: RelationInfo) {
-  navigateTo(`/join/${relation.sourceSchema}/${relation.sourceTable}/${relation.targetSchema}/${relation.targetTable}`)
+function addJoin(targetTable: string) {
+  if (joinedTables.value.includes(targetTable)) return
+
+  if (maxReached.value) {
+    showToast('Maximum 3 joined tables allowed. Remove a table first.')
+    return
+  }
+
+  const query = { ...route.query }
+  const newJoins = [...joinedTables.value, targetTable]
+  query.joins = newJoins.join(',')
+  router.replace({ query })
+}
+
+function removeJoin(tableNameToRemove: string) {
+  const query = { ...route.query }
+  const newJoins = joinedTables.value.filter(t => t !== tableNameToRemove)
+  if (newJoins.length === 0) {
+    delete query.joins
+  }
+  else {
+    query.joins = newJoins.join(',')
+  }
+  router.replace({ query })
 }
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-950">
-    <!-- Header -->
-    <header class="border-b border-gray-700 bg-gray-900">
-      <div class="max-w-7xl mx-auto px-4 py-4">
-        <div class="flex items-center gap-4">
-          <button
-            class="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
-            @click="goBack"
-          >
-            <span>←</span>
-            <span>Back</span>
-          </button>
+  <div class="min-h-screen bg-background">
+    <AppHeader />
 
-          <div class="h-4 w-px bg-gray-700" />
+    <!-- Sub-header with back button and table name -->
+    <div class="border-b bg-background">
+      <div class="max-w-7xl mx-auto px-4 py-3">
+        <div class="flex items-center gap-3">
+          <Button variant="ghost" size="sm" @click="goBack">
+            <ArrowLeftIcon class="mr-1 h-4 w-4" />
+            Back
+          </Button>
 
-          <div class="flex items-baseline gap-2">
-            <span class="text-gray-400">{{ schema }}</span>
-            <span class="text-gray-600">/</span>
-            <span class="text-xl font-semibold text-white">{{ tableName }}</span>
-          </div>
+          <Separator orientation="vertical" class="h-4" />
 
-          <button
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <span class="text-muted-foreground">{{ schema }}</span>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage class="text-lg font-semibold">{{ tableName }}</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+
+          <Button
             v-if="data"
-            class="ml-auto p-2 text-gray-400 hover:text-white transition-colors"
+            variant="ghost"
+            size="icon"
+            class="ml-auto"
             data-testid="column-visibility-toggle"
             @click="showColumnDialog = true"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-          </button>
+            <SettingsIcon class="h-4 w-4" />
+          </Button>
         </div>
       </div>
-    </header>
+    </div>
 
     <!-- Main content -->
     <main class="max-w-7xl mx-auto px-4 py-6">
       <!-- Error state -->
-      <div v-if="error" class="p-4 bg-red-900/50 border border-red-700 rounded-lg text-red-200">
-        Failed to load table: {{ error.message }}
-      </div>
+      <Alert v-if="error" variant="destructive">
+        <AlertTitle>Error</AlertTitle>
+        <AlertDescription>Failed to load table: {{ error.message }}</AlertDescription>
+      </Alert>
 
       <!-- Loading state -->
-      <div v-else-if="!data" class="p-8 text-center text-gray-400">
+      <div v-else-if="!data" class="p-8 text-center text-muted-foreground">
         Loading table data...
+      </div>
+
+      <!-- Toast notification -->
+      <div
+        v-if="toast.visible"
+        class="fixed top-4 right-4 z-50 px-4 py-3 bg-yellow-900/80 border border-yellow-700 rounded-lg text-yellow-200 shadow-lg transition-opacity"
+      >
+        {{ toast.message }}
       </div>
 
       <!-- Table detail -->
@@ -158,11 +253,15 @@ function navigateToJoin(relation: RelationInfo) {
         />
 
         <JoinSuggestions
-          v-if="relationsData && relationsData.relations.length > 0"
-          :relations="relationsData.relations"
+          v-if="allRelationsData && allRelationsData.relations.length > 0"
+          :relations="allRelationsData.relations"
           :schema="schema"
           :table-name="tableName"
-          @select="navigateToJoin"
+          :joined-tables="joinedTables"
+          :visible-tables="visibleTables"
+          :max-reached="maxReached"
+          @add="addJoin"
+          @remove="removeJoin"
         />
 
         <ColumnVisibilityDialog

@@ -1,0 +1,19 @@
+status: todo
+summary: Add fuse.js fuzzy search to column visibility dialog for prefixed columns
+references:
+  - files:
+    - apps/db/app/components/column-visibility-dialog.vue
+    - apps/db/app/components/table-detail.vue
+    - apps/db/app/pages/table/[schema]/[name].vue
+    - apps/db/test/components/column-visibility-dialog.nuxt.spec.ts
+    - apps/db/test/components/table-detail-visible-columns.nuxt.spec.ts
+approach:
+  - Replace substring search with fuse.js in ColumnVisibilityDialog
+  - Import Fuse from 'fuse.js'
+  - Create fuse instance: new Fuse(columns, { threshold: 0.3 })
+  - filteredColumns computed: use fuse.search(searchQuery.value).map(r => r.item) when query exists
+  - Columns may be prefixed like "users.id", "branch_user.user_id" — fuse handles this naturally
+  - Keep fallback to all columns when search empty
+  - Tests: verify "braus" matches "branch_user.user_id"
+  - Tests: verify "us.id" matches "users.id"
+  - Tests: verify partial match works ("org" matches "organisations.name")
