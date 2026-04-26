@@ -8,12 +8,15 @@ import PanelLeftCloseIcon from '~icons/lucide/panel-left-close'
 import PanelLeftOpenIcon from '~icons/lucide/panel-left-open'
 import AlertTriangleIcon from '~icons/lucide/alert-triangle'
 import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
+import { useSchema } from '~/composables/useSchema'
 
 // Fetch tables for command palette
 const { data: tablesData } = await useFetch<{ tables: TableInfo[] }>('/api/tables')
 
 // Fetch schema for autocomplete
 const { schema: editorSchema, error: schemaError } = useSchema()
+
+
 
 // Saved queries and history
 const savedQueries = ref<SavedQuery[]>([])

@@ -103,6 +103,13 @@ onMounted(() => {
     state: startState,
     parent: editorRef.value,
   })
+
+  // Apply schema if already available (race condition: watch fires before onMounted)
+  if (props.schema) {
+    editorView.dispatch({
+      effects: sqlCompartment.reconfigure(sql({ schema: props.schema })),
+    })
+  }
 })
 
 onUnmounted(() => {

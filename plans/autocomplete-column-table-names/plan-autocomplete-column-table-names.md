@@ -238,10 +238,17 @@ CREATE TABLE IF NOT EXISTS schema_metadata (
 ### Deviation from Plan
 - **Toast system:** No shadcn-vue Toast installed. Instead used inline `Alert` component (already in UI kit) for schema fetch errors. This avoids adding a new dependency.
 
+### Bugs Found & Fixed During Browser Testing
+**Race condition in `query-editor.vue`:** The `watch(() => props.schema, ..., { immediate: true })` fires during component creation, before `onMounted` creates the `EditorView`. At that point `editorView` is `null`, so the Compartment reconfiguration is skipped. When `onMounted` runs and creates the editor, the watch doesn't fire again because `props.schema` hasn't changed (it's already set from SSR payload).
+
+**Fix:** Also check `props.schema` in `onMounted` after creating the editor, and apply the schema configuration if it's already available.
+
 ### Test Results
 - E2E (`schema.get.spec.ts`): 4/4 passed
 - E2E (`tables.get.spec.ts`): 4/4 passed (regression check)
 - Component (`query-editor.nuxt.spec.ts`): 7/7 passed
+- Browser verification: ✅ Table autocomplete works (`public.` shows tables)
+- Browser verification: ✅ Column autocomplete works (`table.` shows columns)
 
 ---
 
