@@ -1,0 +1,21 @@
+status: todo
+summary: Add schema_metadata table to SQLite and helper functions for cache read/write
+references:
+  - file: apps/db/server/utils/query-db.ts
+    note: |
+      Add CREATE TABLE IF NOT EXISTS schema_metadata migration alongside existing tables.
+      Add getSchemaCache() and setSchemaCache() helper functions using useDatabase() and db.sql`...`.
+      Follow existing patterns: all data keyed by database_url_hash (SHA256).
+  - file: apps/db/test/e2e/query-db-migrate.spec.ts
+    note: |
+      Existing test pattern for migration verification.
+      Add test that /api/schema returns cached data and schema_metadata table is queryable.
+  - file: apps/db/server/plugins/query-db-migrate.ts
+    note: |
+      Plugin runs migrateQueryDatabase() on startup; verify new migration runs automatically.
+approach:
+  - Migration is idempotent (CREATE TABLE IF NOT EXISTS) per existing convention.
+  - Cache table shape: schema_metadata(id, database_url_hash UNIQUE, tables_json TEXT, updated_at TEXT).
+  - Helper functions: getSchemaCache(hash) returns parsed JSON or null; setSchemaCache(hash, tablesJson) upserts.
+  - E2E test: verify schema_metadata exists and helpers work by calling /api/schema before/after cache population.
+  - TDD: Write e2e test first, then implement migration + helpers.

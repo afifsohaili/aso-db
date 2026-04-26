@@ -1,0 +1,26 @@
+status: todo
+summary: Add listSchema() to db.ts and extend isLocalhost() for *.local domains
+references:
+  - file: apps/db/server/utils/db.ts
+    note: |
+      Add listSchema(pool) function alongside existing listTables(pool).
+      Single query to information_schema.tables + information_schema.columns for 'public' schema.
+      Returns { schema: string, name: string, columns: string[] }[].
+      Extend isLocalhost() to include *.local domains (endsWith('.local')).
+  - file: apps/db/test/e2e/tables.get.spec.ts
+    note: |
+      Existing e2e test pattern for table fetching.
+      Will be extended to verify /api/schema returns columns.
+  - file: apps/db/test/unit/
+    note: |
+      Create unit test for isLocalhost() extension if unit test pattern exists.
+      Otherwise, test via e2e in 003.
+approach:
+  - listSchema() query: SELECT t.table_schema, t.table_name, c.column_name 
+    FROM information_schema.tables t 
+    LEFT JOIN information_schema.columns c ON t.table_schema = c.table_schema AND t.table_name = c.table_name 
+    WHERE t.table_schema = 'public' AND t.table_type IN ('BASE TABLE', 'VIEW') 
+    ORDER BY t.table_name, c.ordinal_position;
+    Group results by table in code to build columns arrays.
+  - isLocalhost extension: add || host.endsWith('.local') to existing check.
+  - TDD: Write listSchema test in 003 (e2e level) since db.ts is a utility.

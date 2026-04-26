@@ -54,6 +54,16 @@ export async function migrateQueryDatabase() {
     // Column already exists
   }
 
+  // Create schema metadata cache table
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS schema_metadata (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      database_url_hash TEXT NOT NULL UNIQUE,
+      tables_json TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )
+  `)
+
   // Migrate query_sessions from single-row to per-DB-url rows
   const sessionsTableInfo = await db.sql`PRAGMA table_info(query_sessions)`
   const rows = sessionsTableInfo.rows ?? []
@@ -80,4 +90,42 @@ export async function migrateQueryDatabase() {
       VALUES (${getDatabaseUrlHash()}, ${sqlContent}, ${updatedAt})
     `
   }
+}
+
+interface SchemaCacheEntry {
+  schema: string
+  name: string
+  columns: string[]
+}
+
+export async function getSchemaCache(hash: string): Promise<SchemaCacheEntry[] | null> {
+  const db = useDatabase()
+  const result = await db.sql`
+    SELECT tables_json, updated_at FROM schema_metadata
+    WHERE database_url_hash = ${hash}
+  `
+  const rows = result.rows ?? []
+  if (rows.length === 0) return null
+
+  const row = rows[0] as any
+  try {
+    return JSON.parse(row.tables_json)
+  }
+  catch {
+    return null
+  }
+}
+
+export async function setSchemaCache(hash: string, tables: SchemaCacheEntry[]): Promise<void> {
+  const db = useDatabase()
+  const tablesJson = JSON.stringify(tables)
+  const updatedAt = new Date().toISOString()
+
+  await db.sql`
+    INSERT INTO schema_metadata (database_url_hash, tables_json, updated_at)
+    VALUES (${hash}, ${tablesJson}, ${updatedAt})
+    ON CONFLICT(database_url_hash) DO UPDATE SET
+      tables_json = excluded.tables_json,
+      updated_at = excluded.updated_at
+  `
 }

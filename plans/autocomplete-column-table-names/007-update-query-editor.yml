@@ -1,0 +1,24 @@
+status: todo
+summary: Add schema prop to query-editor.vue and use CodeMirror Compartment for dynamic reconfiguration
+references:
+  - file: apps/db/app/components/query-editor.vue
+    note: |
+      Add 'schema' prop (object: { [schemaName]: { [tableName]: string[] } }).
+      Introduce Compartment for sql() extension.
+      Watch schema prop changes and call sqlCompartment.reconfigure(sql({ schema: mappedSchema, dialect: PostgreSQL })).
+      Keep existing props (modelValue, loading, readOnly) and emits.
+  - file: apps/db/test/components/query-editor.nuxt.spec.ts
+    note: |
+      Existing tests verify props, events, button states.
+      Add test: mount with schema prop, verify editor has autocomplete configured.
+      Add test: change schema prop via setProps, verify reconfiguration happens.
+  - file: apps/db/app/pages/query.vue
+    note: |
+      Will pass schema from useSchema() to QueryEditor component.
+      Map useSchema response to SQLConfig.schema shape before passing.
+approach:
+  - Import Compartment from @codemirror/state and PostgreSQL dialect from @codemirror/lang-sql.
+  - Create sqlCompartment = new Compartment in setup.
+  - Initial sql() config uses empty schema or schema from prop.
+  - Watch schema prop: when changed, editorView.dispatch({ effects: sqlCompartment.reconfigure(sql({ schema: propSchema, dialect: PostgreSQL })) }).
+  - TDD: Extend existing component test file with schema prop tests.

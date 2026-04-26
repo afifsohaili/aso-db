@@ -1,0 +1,22 @@
+status: todo
+summary: Refactor GET /api/tables to read from schema cache instead of live query
+references:
+  - file: apps/db/server/api/tables.get.ts
+    note: |
+      Current implementation calls listTables(pool) directly.
+      Refactor to import getSchemaCache from query-db.ts.
+      If cache miss, trigger cache population (or call listSchema directly as fallback).
+      Return same shape { tables: TableInfo[] } for backward compatibility.
+  - file: apps/db/server/utils/query-db.ts
+    note: |
+      Use getSchemaCache() and setSchemaCache() helpers.
+  - file: apps/db/test/e2e/tables.get.spec.ts
+    note: |
+      Existing e2e tests must continue to pass.
+      Verify tables are returned from cache after /api/schema has been called.
+      Test that /api/tables returns [] when cache is empty and DB is unreachable.
+approach:
+  - Keep same response shape { tables: TableInfo[] }.
+  - Try cache first; if missing, fall back to listSchema() (or listTables() if simpler) and populate cache.
+  - Ensure backward compatibility with query.vue command palette.
+  - TDD: Run existing tables.get.spec.ts first (should fail if cache empty), then fix.

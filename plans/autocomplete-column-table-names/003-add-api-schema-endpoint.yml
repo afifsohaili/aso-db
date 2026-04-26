@@ -1,0 +1,29 @@
+status: todo
+summary: Create GET /api/schema endpoint with SQLite cache read-through logic
+references:
+  - file: apps/db/server/api/tables.get.ts
+    note: |
+      Existing simple GET endpoint pattern: defineEventHandler, getPool, return { tables }.
+      New endpoint follows same pattern but adds cache layer.
+  - file: apps/db/server/utils/query-db.ts
+    note: |
+      Import getSchemaCache, setSchemaCache helpers from 001.
+      Use getDatabaseUrlHash() for cache key.
+  - file: apps/db/server/utils/db.ts
+    note: |
+      Import listSchema(pool) from 002 and isLocalhost() for TTL calculation.
+  - file: apps/db/test/e2e/tables.get.spec.ts
+    note: |
+      E2E test pattern: Pool → beforeAll/afterAll → setupE2E() → fetch() assertions.
+      Create test tables with columns, verify /api/schema returns tables + columns.
+      Test cache hit (second request is fast), cache miss (stale cache fallback).
+  - file: apps/db/server/api/config.get.ts
+    note: |
+      Runtime config access pattern: useRuntimeConfig(), config.databaseUrl.
+      Endpoint needs database_url_hash from runtime config.
+approach:
+  - Endpoint: server/api/schema.get.ts
+  - Flow: check SQLite cache → if stale/missing, query PostgreSQL via listSchema() → write cache → return.
+  - TTL: 5 min if isLocalhost(), 4 hours otherwise. Parse updated_at timestamp.
+  - On DB error: return stale cache if available, else { tables: [] }.
+  - TDD: Write e2e test first creating tables with known columns, then implement endpoint.
