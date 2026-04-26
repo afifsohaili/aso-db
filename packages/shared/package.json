@@ -7,9 +7,14 @@
     ".": {
       "types": "./types.d.ts",
       "import": "./types.d.ts"
+    },
+    "./schema": {
+      "types": "./schema.ts",
+      "import": "./schema.ts"
     }
   },
   "files": [
-    "types.d.ts"
+    "types.d.ts",
+    "schema.ts"
   ]
 }
