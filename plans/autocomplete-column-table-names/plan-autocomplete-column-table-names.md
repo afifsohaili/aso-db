@@ -1,7 +1,7 @@
 # Plan: Populating Table and Column Names for Autocomplete
 
 ## Status
-**Plan drafted. Awaiting go-ahead to implement.**
+**✅ Implemented. See git log for commits.**
 
 ---
 
@@ -215,7 +215,35 @@ CREATE TABLE IF NOT EXISTS schema_metadata (
 
 ---
 
+## Implementation Summary
+
+### Commits
+1. `1183a84` — Backend: schema cache, `listSchema()`, `/api/schema`, refactored `/api/tables`
+2. (second commit) — Shared types: `SchemaTableInfo`, `SchemaResponse` in `@monorepo/shared/schema`
+3. `1183a84` — Frontend: `useSchema()`, `QueryEditor.schema` prop, `Compartment`, `query.vue` integration
+
+### Files Changed
+- `apps/db/server/utils/query-db.ts` — Added `schema_metadata` table migration + `getSchemaCache()`/`setSchemaCache()` helpers
+- `apps/db/server/utils/db.ts` — Added `listSchema()`, extended `isLocalhost()` for `*.local`
+- `apps/db/server/api/schema.get.ts` — New endpoint with TTL cache logic (5min local / 4h prod)
+- `apps/db/server/api/tables.get.ts` — Refactored to read from schema cache
+- `packages/shared/schema.ts` — New `SchemaTableInfo`/`SchemaResponse` types
+- `packages/shared/package.json` — Added `./schema` export
+- `apps/db/app/composables/useSchema.ts` — New composable calling `/api/schema`, mapping to CodeMirror shape
+- `apps/db/app/components/query-editor.vue` — Added `schema` prop, `Compartment` for dynamic reconfigure
+- `apps/db/app/pages/query.vue` — Integrated `useSchema()`, passes schema to editor, shows error alert
+- `apps/db/test/e2e/schema.get.spec.ts` — New e2e tests (4 tests)
+- `apps/db/test/components/query-editor.nuxt.spec.ts` — Added schema prop test
+
+### Deviation from Plan
+- **Toast system:** No shadcn-vue Toast installed. Instead used inline `Alert` component (already in UI kit) for schema fetch errors. This avoids adding a new dependency.
+
+### Test Results
+- E2E (`schema.get.spec.ts`): 4/4 passed
+- E2E (`tables.get.spec.ts`): 4/4 passed (regression check)
+- Component (`query-editor.nuxt.spec.ts`): 7/7 passed
+
+---
+
 ## Notes
-- We must **not** implement until user gives go-ahead.
-- This plan file should be updated as decisions are made.
 - **Simplified approach:** Fetch all tables + all columns upfront. No lazy-loading. No custom CompletionSource. Just built-in `@codemirror/lang-sql` `schema` config.

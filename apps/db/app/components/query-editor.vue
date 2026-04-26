@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { EditorView, keymap } from '@codemirror/view'
-import { EditorState, Prec } from '@codemirror/state'
+import { EditorState, Prec, Compartment } from '@codemirror/state'
 import { sql } from '@codemirror/lang-sql'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { basicSetup } from 'codemirror'
@@ -22,11 +22,13 @@ interface Props {
   modelValue: string
   loading?: boolean
   readOnly?: boolean
+  schema?: Record<string, Record<string, string[]>> | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
   loading: false,
   readOnly: true,
+  schema: null,
 })
 
 const emit = defineEmits<{
@@ -37,6 +39,7 @@ const emit = defineEmits<{
 
 const editorRef = ref<HTMLDivElement | null>(null)
 let editorView: EditorView | null = null
+const sqlCompartment = new Compartment()
 
 function getSelectedText(): string {
   if (!editorView) return ''
@@ -77,7 +80,7 @@ onMounted(() => {
     doc: props.modelValue,
     extensions: [
       basicSetup,
-      sql(),
+      sqlCompartment.of(sql()),
       oneDark,
       customKeymap,
       EditorView.updateListener.of((update) => {
@@ -117,6 +120,18 @@ watch(() => props.modelValue, (newValue) => {
     })
   }
 })
+
+watch(() => props.schema, (newSchema) => {
+  if (!editorView) return
+
+  const schemaConfig = newSchema
+    ? sql({ schema: newSchema })
+    : sql()
+
+  editorView.dispatch({
+    effects: sqlCompartment.reconfigure(schemaConfig),
+  })
+}, { immediate: true })
 </script>
 
 <template>

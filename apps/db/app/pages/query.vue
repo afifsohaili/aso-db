@@ -12,6 +12,9 @@ import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
 // Fetch tables for command palette
 const { data: tablesData } = await useFetch<{ tables: TableInfo[] }>('/api/tables')
 
+// Fetch schema for autocomplete
+const { schema: editorSchema, error: schemaError } = useSchema()
+
 // Saved queries and history
 const savedQueries = ref<SavedQuery[]>([])
 const history = ref<{ id: string, sqlContent: string, executedAt: string, isStarred: boolean }[]>([])
@@ -294,10 +297,19 @@ function onTableSelect(table: TableInfo) {
         class="flex flex-col border-r bg-background min-w-[300px]"
         :class="{ 'flex-1': resultsMaximized, 'w-1/2': !resultsMaximized }"
       >
+        <Alert v-if="schemaError" variant="destructive" class="rounded-none border-x-0 border-t-0">
+          <AlertTriangleIcon class="h-4 w-4" />
+          <AlertTitle>Schema Error</AlertTitle>
+          <AlertDescription>
+            Failed to load schema autocomplete. Tables and columns will not be suggested.
+          </AlertDescription>
+        </Alert>
+
         <QueryEditor
           v-model="sql"
           :loading="loading"
           :read-only="isReadOnly"
+          :schema="editorSchema"
           @run-all="handleRunAll"
           @run-selected="handleRunSelected"
         />

@@ -92,4 +92,22 @@ describe('QueryEditor', () => {
     await wrapper.setProps({ modelValue: 'SELECT 2' })
     expect(wrapper.emitted('update:modelValue')).toBeDefined()
   })
+
+  it('accepts schema prop without errors', async () => {
+    const wrapper = await mountSuspended(QueryEditor, {
+      props: {
+        modelValue: 'SELECT 1',
+        loading: false,
+        readOnly: true,
+        schema: {
+          public: {
+            users: ['id', 'email', 'name'],
+          },
+        },
+      },
+    })
+
+    // Should render without errors
+    expect(wrapper.find('.cm-editor').exists()).toBe(true)
+  })
 })
