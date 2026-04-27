@@ -4,11 +4,25 @@ import type { QueryResult, SavedQuery } from '~/shared/types/query'
 import type { TableInfo } from '~/shared/types/table'
 import Minimize2Icon from '~icons/lucide/minimize-2'
 import ExpandIcon from '~icons/lucide/expand'
-import PanelLeftCloseIcon from '~icons/lucide/panel-left-close'
-import PanelLeftOpenIcon from '~icons/lucide/panel-left-open'
 import AlertTriangleIcon from '~icons/lucide/alert-triangle'
 import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
 import { useSchema } from '~/composables/useSchema'
+
+interface ConfigResponse {
+  isReadOnly?: boolean
+}
+
+const currentConfig = ref<ConfigResponse | null>(null)
+const isReadOnly = computed(() => currentConfig.value?.isReadOnly ?? true)
+
+onMounted(async () => {
+  try {
+    currentConfig.value = await $fetch<ConfigResponse>('/api/config')
+  }
+  catch {
+    // ignore
+  }
+})
 
 // Fetch tables for command palette
 const { data: tablesData } = await useFetch<{ tables: TableInfo[] }>('/api/tables')
@@ -31,46 +45,50 @@ const error = ref<{ title: string, message: string } | null>(null)
 const durationMs = ref(0)
 
 // UI state
-const sidebarCollapsed = ref(false)
 const resultsMaximized = ref(false)
 const showCommandPalette = ref(false)
 const sessionId = ref<string | null>(null)
 
 // Layout refs
-const containerRef = ref<HTMLDivElement | null>(null)
-const sidebarRef = ref<HTMLDivElement | null>(null)
 const editorRef = ref<HTMLDivElement | null>(null)
 const resultsRef = ref<HTMLDivElement | null>(null)
 
 let isResizing = false
 let startX = 0
-let startSidebarWidth = 0
 let startEditorWidth = 0
+let startResultsWidth = 0
 
-function startResize(e: MouseEvent) {
-  if (!sidebarRef.value || !editorRef.value) return
+function startResizeResults(e: MouseEvent) {
+  if (!editorRef.value || !resultsRef.value) return
   isResizing = true
   startX = e.clientX
-  startSidebarWidth = sidebarRef.value.offsetWidth
   startEditorWidth = editorRef.value.offsetWidth
+  startResultsWidth = resultsRef.value.offsetWidth
   document.body.style.cursor = 'col-resize'
   document.body.style.userSelect = 'none'
 }
 
 function onMouseMove(e: MouseEvent) {
-  if (!isResizing || !sidebarRef.value || !editorRef.value || !containerRef.value) return
+  if (!isResizing || !editorRef.value || !resultsRef.value) return
+  const totalWidth = startEditorWidth + startResultsWidth
   const delta = e.clientX - startX
-  const containerWidth = containerRef.value.offsetWidth
-  const newSidebarWidth = Math.max(200, Math.min(400, startSidebarWidth + delta))
-  const newEditorWidth = Math.max(300, Math.min(800, startEditorWidth + delta))
-  sidebarRef.value.style.width = `${newSidebarWidth}px`
+  const newEditorWidth = Math.max(200, Math.min(totalWidth - 200, startEditorWidth + delta))
+  const newResultsWidth = totalWidth - newEditorWidth
   editorRef.value.style.width = `${newEditorWidth}px`
+  resultsRef.value.style.width = `${newResultsWidth}px`
 }
 
 function stopResize() {
   isResizing = false
   document.body.style.cursor = ''
   document.body.style.userSelect = ''
+}
+
+function toggleResultsMaximized() {
+  resultsMaximized.value = !resultsMaximized.value
+  // clear explicit widths so flex classes work properly
+  if (editorRef.value) editorRef.value.style.width = ''
+  if (resultsRef.value) resultsRef.value.style.width = ''
 }
 
 onMounted(() => {
@@ -266,17 +284,72 @@ function onTableSelect(table: TableInfo) {
     </Alert>
 
     <!-- Main content -->
-    <div
-      ref="containerRef"
-      class="flex flex-1 overflow-hidden"
-    >
-      <!-- Sidebar -->
-      <div
-        v-show="!sidebarCollapsed"
-        ref="sidebarRef"
-        class="w-64 border-r flex flex-col bg-background"
-      >
-        <QueryHistorySidebar
+    <div class="flex flex-1 overflow-hidden flex-col">
+      <!-- Editor + Results -->
+      <div class="flex flex-1 overflow-hidden">
+        <!-- Editor -->
+        <div
+          ref="editorRef"
+          class="flex flex-col border-r bg-background min-w-[300px]"
+          :class="{ 'hidden': resultsMaximized, 'w-1/2': !resultsMaximized }"
+        >
+          <Alert v-if="schemaError" variant="destructive" class="rounded-none border-x-0 border-t-0">
+            <AlertTriangleIcon class="h-4 w-4" />
+            <AlertTitle>Schema Error</AlertTitle>
+            <AlertDescription>
+              Failed to load schema autocomplete. Tables and columns will not be suggested.
+            </AlertDescription>
+          </Alert>
+
+          <QueryEditor
+            v-model="sql"
+            :loading="loading"
+            :read-only="isReadOnly"
+            :schema="editorSchema"
+            @run-all="handleRunAll"
+            @run-selected="handleRunSelected"
+          />
+        </div>
+
+        <!-- Results resize handle -->
+        <div
+          v-show="!resultsMaximized"
+          class="w-1 cursor-col-resize hover:bg-muted transition-colors"
+          @mousedown="startResizeResults"
+        />
+
+        <!-- Results -->
+        <div
+          ref="resultsRef"
+          class="flex flex-col bg-background"
+          :class="{ 'flex-1': resultsMaximized, 'w-1/2': !resultsMaximized, hidden: resultsMaximized && !results.length && !loading && !error }"
+        >
+          <div class="flex items-center justify-between px-4 py-2 border-b">
+            <span class="text-sm font-medium">Results</span>
+            <Button
+              variant="ghost"
+              size="icon"
+              :aria-label="resultsMaximized ? 'Restore results panel' : 'Maximize results panel'"
+              @click="toggleResultsMaximized"
+            >
+              <component :is="resultsMaximized ? Minimize2Icon : ExpandIcon" class="h-4 w-4" />
+            </Button>
+          </div>
+          <div class="flex-1 overflow-auto p-4">
+            <QueryResults
+              :results="results"
+              :loading="loading"
+              :error="error"
+              :sql="sql"
+              :duration-ms="durationMs"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom tabs -->
+      <div class="h-56 border-t flex flex-col bg-background">
+        <QueryBottomTabs
           :saved-queries="savedQueries"
           :history="history"
           :active-saved-query-id="activeSavedQueryId"
@@ -287,77 +360,10 @@ function onTableSelect(table: TableInfo) {
           @create-new="handleCreateNew"
         />
       </div>
-
-      <!-- Resize handle -->
-      <div
-        class="w-1 cursor-col-resize hover:bg-muted transition-colors"
-        @mousedown="startResize"
-      />
-
-      <!-- Editor -->
-      <div
-        ref="editorRef"
-        class="flex flex-col border-r bg-background min-w-[300px]"
-        :class="{ 'flex-1': resultsMaximized, 'w-1/2': !resultsMaximized }"
-      >
-        <Alert v-if="schemaError" variant="destructive" class="rounded-none border-x-0 border-t-0">
-          <AlertTriangleIcon class="h-4 w-4" />
-          <AlertTitle>Schema Error</AlertTitle>
-          <AlertDescription>
-            Failed to load schema autocomplete. Tables and columns will not be suggested.
-          </AlertDescription>
-        </Alert>
-
-        <QueryEditor
-          v-model="sql"
-          :loading="loading"
-          :read-only="isReadOnly"
-          :schema="editorSchema"
-          @run-all="handleRunAll"
-          @run-selected="handleRunSelected"
-        />
-      </div>
-
-      <!-- Results -->
-      <div
-        ref="resultsRef"
-        class="flex flex-col bg-background"
-        :class="{ 'flex-1': !resultsMaximized, 'w-1/2': !resultsMaximized, hidden: resultsMaximized && !results.length && !loading && !error }"
-      >
-        <div class="flex items-center justify-between px-4 py-2 border-b">
-          <span class="text-sm font-medium">Results</span>
-          <Button
-            variant="ghost"
-            size="icon"
-            :aria-label="resultsMaximized ? 'Restore results panel' : 'Maximize results panel'"
-            @click="resultsMaximized = !resultsMaximized"
-          >
-            <component :is="resultsMaximized ? Minimize2Icon : ExpandIcon" class="h-4 w-4" />
-          </Button>
-        </div>
-        <div class="flex-1 overflow-auto p-4">
-          <QueryResults
-            :results="results"
-            :loading="loading"
-            :error="error"
-            :sql="sql"
-            :duration-ms="durationMs"
-          />
-        </div>
-      </div>
     </div>
 
-    <!-- Floating controls -->
+    <!-- Floating save button -->
     <div class="fixed bottom-4 left-4 flex items-center gap-2">
-      <Button
-        variant="outline"
-        size="icon"
-        :aria-label="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
-        @click="sidebarCollapsed = !sidebarCollapsed"
-      >
-        <component :is="sidebarCollapsed ? PanelLeftOpenIcon : PanelLeftCloseIcon" class="h-4 w-4" />
-      </Button>
-
       <Button
         variant="outline"
         size="sm"

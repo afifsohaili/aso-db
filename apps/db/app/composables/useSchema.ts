@@ -1,7 +1,7 @@
 import type { SchemaResponse } from '@monorepo/shared/schema'
 
 export function useSchema() {
-  const { data, error, status } = useFetch<SchemaResponse>('/api/schema')
+  const { data: schema, error, status } = useFetch<SchemaResponse>('/api/schema')
 
   return {
     schema,
