@@ -85,14 +85,14 @@ describe('GET /api/tables/:schema/:name structure', async () => {
 
     const idCol = body.structure.columns.find((c: any) => c.name === 'id')
     expect(idCol).toBeDefined()
-    expect(idCol.type).toBe('integer') // SERIAL maps to integer
+    expect(idCol.type).toBe('int4') // SERIAL maps to int4 via udt_name
     expect(idCol.nullable).toBe(false)
     expect(idCol.isPrimaryKey).toBe(true)
     expect(idCol.constraints).toContain('PRIMARY KEY')
 
     const emailCol = body.structure.columns.find((c: any) => c.name === 'email')
     expect(emailCol).toBeDefined()
-    expect(emailCol.type).toContain('character varying')
+    expect(emailCol.type).toBe('varchar(255)')
     expect(emailCol.nullable).toBe(false)
     expect(emailCol.isPrimaryKey).toBe(false)
     expect(emailCol.constraints).toContain('UNIQUE')

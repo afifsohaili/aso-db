@@ -17,6 +17,40 @@ function isLocalhost(url: string): boolean {
 
 export { isLocalhost }
 
+export function formatColumnType(
+  udtName: string,
+  dataType: string,
+  characterMaximumLength: number | null,
+  numericPrecision: number | null,
+  numericScale: number | null,
+): string {
+  let type = udtName
+  if (type === 'bpchar') type = 'char'
+
+  if (type === 'varchar' && characterMaximumLength) {
+    type = `varchar(${characterMaximumLength})`
+  }
+  else if (type === 'char' && characterMaximumLength) {
+    type = `char(${characterMaximumLength})`
+  }
+  else if (type === 'numeric' && numericPrecision !== null) {
+    if (numericScale !== null && numericScale > 0) {
+      type = `numeric(${numericPrecision},${numericScale})`
+    }
+    else {
+      type = `numeric(${numericPrecision})`
+    }
+  }
+  else if (dataType === 'ARRAY') {
+    type = `${udtName.replace('_', '')}[]`
+  }
+  else if (dataType === 'USER-DEFINED') {
+    type = udtName
+  }
+
+  return type
+}
+
 export function getPool(): Pool {
   if (!pool) {
     const config = useRuntimeConfig()
@@ -196,28 +230,13 @@ export async function fetchTableStructure(
     const constraints = columnConstraints.get(row.column_name) || []
     const fk = columnForeignKeys.get(row.column_name)
 
-    // Build type string with precision/scale/length
-    let type = row.data_type
-    if (row.data_type === 'character varying' && row.character_maximum_length) {
-      type = `character varying(${row.character_maximum_length})`
-    }
-    else if (row.data_type === 'character' && row.character_maximum_length) {
-      type = `character(${row.character_maximum_length})`
-    }
-    else if (row.data_type === 'numeric' && row.numeric_precision !== null) {
-      if (row.numeric_scale !== null && row.numeric_scale > 0) {
-        type = `numeric(${row.numeric_precision},${row.numeric_scale})`
-      }
-      else {
-        type = `numeric(${row.numeric_precision})`
-      }
-    }
-    else if (row.data_type === 'ARRAY') {
-      type = `${row.udt_name.replace('_', '')}[]`
-    }
-    else if (row.data_type === 'USER-DEFINED') {
-      type = row.udt_name
-    }
+    const type = formatColumnType(
+      row.udt_name,
+      row.data_type,
+      row.character_maximum_length,
+      row.numeric_precision,
+      row.numeric_scale,
+    )
 
     return {
       name: row.column_name,
