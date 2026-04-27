@@ -16,7 +16,7 @@ pnpm workspace (`apps/*`, `packages/*`). No turbo/nx.
 
 Root scripts mostly delegate to `apps/web`:
 - `pnpm dev` — runs **both** `web` (3300) and `db` (3301) in parallel
-- `pnpm dev:db` — runs only `apps/db`
+- `pnpm dev:db` — runs only `apps/db` (requires `NUXT_DATABASE_URL` env var, e.g. `export NUXT_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/asodb_test`)
 - `pnpm build` — builds `apps/web`
 - `pnpm generate` — generates static `apps/web`
 - `pnpm lint` / `pnpm lint:fix` — runs eslint in `apps/web`

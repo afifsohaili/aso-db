@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
+import VueJsonPretty from 'vue-json-pretty'
 import TableDetail from '~/components/table-detail.vue'
 import {
   Table,
@@ -177,5 +178,98 @@ describe('TableDetail', () => {
     const html = component.html()
     // Arrow-up icon SVG path from lucide
     expect(html).toContain('m5 12l7-7l7 7m-7 7V5')
+  })
+
+  it('renders JSON cells as clickable with cursor-pointer', async () => {
+    const component = await mountSuspended(TableDetail, {
+      props: {
+        columns: ['id', 'metadata'],
+        records: [
+          { id: 1, metadata: { name: 'Alice', tags: ['a', 'b'] } },
+        ],
+      },
+    })
+
+    const html = component.html()
+    expect(html).toContain('cursor-pointer')
+  })
+
+  it('opens modal with VueJsonPretty when JSON cell is clicked', async () => {
+    const component = await mountSuspended(TableDetail, {
+      attachTo: document.body,
+      props: {
+        columns: ['id', 'metadata'],
+        records: [
+          { id: 1, metadata: { name: 'Alice', tags: ['a', 'b'] } },
+        ],
+      },
+    })
+
+    // Find JSON cell by looking for whitespace-pre in data cells (not headers)
+    const jsonCell = component.find('td .cursor-pointer')
+    await jsonCell.trigger('click')
+
+    // Dialog uses teleport, search in document.body
+    const vueJsonPretty = component.findComponent(VueJsonPretty)
+    expect(vueJsonPretty.exists()).toBe(true)
+    expect(vueJsonPretty.props('data')).toEqual({ name: 'Alice', tags: ['a', 'b'] })
+  })
+
+  it('opens modal with parsed JSON string data when clicked', async () => {
+    const component = await mountSuspended(TableDetail, {
+      attachTo: document.body,
+      props: {
+        columns: ['id', 'metadata'],
+        records: [
+          { id: 1, metadata: '{"name":"Alice","active":true}' },
+        ],
+      },
+    })
+
+    const jsonCell = component.find('td .cursor-pointer')
+    await jsonCell.trigger('click')
+
+    const vueJsonPretty = component.findComponent(VueJsonPretty)
+    expect(vueJsonPretty.exists()).toBe(true)
+    expect(vueJsonPretty.props('data')).toEqual({ name: 'Alice', active: true })
+  })
+
+  it('shows column name as dialog title in JSON modal', async () => {
+    const component = await mountSuspended(TableDetail, {
+      attachTo: document.body,
+      props: {
+        columns: ['id', 'metadata'],
+        records: [
+          { id: 1, metadata: { name: 'Alice' } },
+        ],
+      },
+    })
+
+    const jsonCell = component.find('td .cursor-pointer')
+    await jsonCell.trigger('click')
+
+    expect(component.text()).toContain('metadata')
+  })
+
+  it('truncates JSON values to 7 lines in table cell', async () => {
+    const deepObject: Record<string, any> = {}
+    for (let i = 0; i < 10; i++) {
+      deepObject[`key${i}`] = `value${i}`
+    }
+
+    const component = await mountSuspended(TableDetail, {
+      props: {
+        columns: ['id', 'metadata'],
+        records: [
+          { id: 1, metadata: deepObject },
+        ],
+      },
+    })
+
+    const jsonCell = component.find('td .cursor-pointer')
+    const cellText = jsonCell.text()
+    const lineCount = cellText.split('\n').length
+    expect(lineCount).toBeLessThanOrEqual(8) // 7 lines + "..."
+    expect(cellText).toContain('...')
   })
 })

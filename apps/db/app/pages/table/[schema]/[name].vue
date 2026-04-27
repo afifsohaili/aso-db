@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { FetchTableRecordsResult, RelationInfo } from '~/shared/types/table'
+import type { FetchTableRecordsResult, RelationInfo, TableStructure } from '~/shared/types/table'
 import type { SortState } from '~/components/table-detail.vue'
 import {
   Breadcrumb,
@@ -27,6 +27,7 @@ const visibleColumns = computed(() => {
 })
 
 const showColumnDialog = ref(false)
+const activeTab = ref<'data' | 'structure'>('data')
 
 // Pagination state
 const page = ref(1)
@@ -224,52 +225,93 @@ function removeJoin(tableNameToRemove: string) {
         Loading table data...
       </div>
 
+      <!-- Table detail -->
+      <div v-else class="space-y-4">
+        <!-- Tab Switcher -->
+        <div class="border-b">
+          <div class="flex gap-1">
+            <button
+              class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
+              :class="activeTab === 'data'
+                ? 'border-primary text-foreground'
+                : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30'"
+              @click="activeTab = 'data'"
+            >
+              Data
+            </button>
+            <button
+              class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
+              :class="activeTab === 'structure'
+                ? 'border-primary text-foreground'
+                : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30'"
+              @click="activeTab = 'structure'"
+            >
+              Structure
+            </button>
+          </div>
+        </div>
+
+        <!-- Data Tab -->
+        <div v-show="activeTab === 'data'">
+          <TableDetail
+            :columns="data.columns"
+            :records="data.records"
+            :total-count="data.totalCount"
+            :sort="sort"
+            :visible-columns="visibleColumns"
+            :column-info="data.structure?.columns"
+            @update:sort="updateSort"
+          />
+
+          <Pagination
+            :page="page"
+            :limit="limit"
+            :total-count="data.totalCount"
+            @prev="prevPage"
+            @next="nextPage"
+            @update:limit="updateLimit"
+          />
+
+          <JoinSuggestions
+            v-if="allRelationsData && allRelationsData.relations.length > 0"
+            :relations="allRelationsData.relations"
+            :schema="schema"
+            :table-name="tableName"
+            :joined-tables="joinedTables"
+            :visible-tables="visibleTables"
+            :max-reached="maxReached"
+            @add="addJoin"
+            @remove="removeJoin"
+          />
+
+          <ColumnVisibilityDialog
+            v-model="showColumnDialog"
+            :columns="data.columns"
+            :visible-columns="visibleColumns || data.columns"
+            @update:visible-columns="updateVisibleColumns"
+          />
+        </div>
+
+        <!-- Structure Tab -->
+        <div v-show="activeTab === 'structure'">
+          <TableStructure
+            v-if="data.structure"
+            :columns="data.structure.columns"
+            :indexes="data.structure.indexes"
+            :foreign-keys="data.structure.foreignKeys"
+          />
+          <div v-else class="p-8 text-center text-muted-foreground">
+            No structure information available.
+          </div>
+        </div>
+      </div>
+
       <!-- Toast notification -->
       <div
-        v-if="toast.visible"
+        v-show="toast.visible"
         class="fixed top-4 right-4 z-50 px-4 py-3 bg-yellow-900/80 border border-yellow-700 rounded-lg text-yellow-200 shadow-lg transition-opacity"
       >
         {{ toast.message }}
-      </div>
-
-      <!-- Table detail -->
-      <div v-else class="space-y-4">
-        <TableDetail
-          :columns="data.columns"
-          :records="data.records"
-          :total-count="data.totalCount"
-          :sort="sort"
-          :visible-columns="visibleColumns"
-          @update:sort="updateSort"
-        />
-
-        <Pagination
-          :page="page"
-          :limit="limit"
-          :total-count="data.totalCount"
-          @prev="prevPage"
-          @next="nextPage"
-          @update:limit="updateLimit"
-        />
-
-        <JoinSuggestions
-          v-if="allRelationsData && allRelationsData.relations.length > 0"
-          :relations="allRelationsData.relations"
-          :schema="schema"
-          :table-name="tableName"
-          :joined-tables="joinedTables"
-          :visible-tables="visibleTables"
-          :max-reached="maxReached"
-          @add="addJoin"
-          @remove="removeJoin"
-        />
-
-        <ColumnVisibilityDialog
-          v-model="showColumnDialog"
-          :columns="data.columns"
-          :visible-columns="visibleColumns || data.columns"
-          @update:visible-columns="updateVisibleColumns"
-        />
       </div>
     </main>
   </div>

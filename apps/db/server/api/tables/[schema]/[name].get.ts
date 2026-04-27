@@ -1,6 +1,6 @@
 import type { Pool } from 'pg'
-import { getPool } from '../../../utils/db'
-import type { FetchTableRecordsOptions, FetchTableRecordsResult, RelationInfo } from '../../../../shared/types/table'
+import { getPool, fetchTableStructure } from '../../../utils/db'
+import type { FetchTableRecordsOptions, FetchTableRecordsResult, RelationInfo, TableStructure } from '../../../../shared/types/table'
 
 export interface FetchOptions extends FetchTableRecordsOptions {
   sort?: string | null
@@ -227,12 +227,14 @@ export default defineEventHandler(async (event) => {
   const { page = '1', limit = '50', sort, order, joins: joinsParam } = getQuery(event)
 
   // Validate identifiers
-  if (!isValidIdentifier(schema) || !isValidIdentifier(name)) {
+  if (!schema || !name || !isValidIdentifier(schema) || !isValidIdentifier(name)) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Invalid schema or table name',
     })
   }
+
+  const tableName = name
 
   // Validate sort column if provided
   if (sort && !isValidIdentifier(sort as string)) {
@@ -273,26 +275,32 @@ export default defineEventHandler(async (event) => {
     const tableCheck = await poolInstance.query(`
       SELECT 1 FROM information_schema.tables
       WHERE table_schema = $1 AND table_name = $2
-    `, [schema, name])
+    `, [schema, tableName])
 
     if (tableCheck.rows.length === 0) {
       throw createError({
         statusCode: 404,
-        statusMessage: `Table "${schema}.${name}" not found`,
+        statusMessage: `Table "${schema}.${tableName}" not found`,
       })
     }
 
-    const result = await fetchTableRecords(poolInstance, {
-      schema,
-      tableName: name,
-      page: pageNum,
-      limit: limitNum,
-      sort: sort as string | undefined,
-      order: validOrder,
-      joins,
-    })
+    const [result, structure] = await Promise.all([
+      fetchTableRecords(poolInstance, {
+        schema,
+        tableName,
+        page: pageNum,
+        limit: limitNum,
+        sort: sort as string | undefined,
+        order: validOrder,
+        joins,
+      }),
+      fetchTableStructure(poolInstance, schema, tableName),
+    ])
 
-    return result
+    return {
+      ...result,
+      structure,
+    }
   }
   catch (err: any) {
     console.error('Error fetching table records:', err)

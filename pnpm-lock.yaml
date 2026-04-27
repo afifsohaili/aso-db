@@ -85,6 +85,9 @@ importers:
       tw-animate-css:
         specifier: ^1.4.0
         version: 1.4.0
+      vue-json-pretty:
+        specifier: ^2.6.0
+        version: 2.6.0(vue@3.5.28(typescript@5.9.3))
     devDependencies:
       '@antfu/eslint-config':
         specifier: ^6.2.0
@@ -7820,6 +7823,12 @@ packages:
     deprecated: v9 and v10 no longer supported. please migrate to v11. about maintenance status, see https://vue-i18n.intlify.dev/guide/maintenance.html
     peerDependencies:
       vue: ^3.0.0
+
+  vue-json-pretty@2.6.0:
+    resolution: {integrity: sha512-glz1aBVS35EO8+S9agIl3WOQaW2cJZW192UVKTuGmryx01ZvOVWc4pR3t+5UcyY4jdOfBUgVHjcpRpcnjRhCAg==}
+    engines: {node: '>= 10.0.0', npm: '>= 5.0.0'}
+    peerDependencies:
+      vue: '>=3.0.0'
 
   vue-metamorph@3.3.4:
     resolution: {integrity: sha512-WZ1xzHrmYh9UiZ7OC9eG1ASzgSybEB10jhop+k5KzMY9I1JmRKdreqUYzbV3hOnOMvLhyDn7y6f62mLE2jHFSg==}
@@ -17354,6 +17363,10 @@ snapshots:
       '@intlify/core-base': 9.14.5
       '@intlify/shared': 9.14.5
       '@vue/devtools-api': 6.6.4
+      vue: 3.5.28(typescript@5.9.3)
+
+  vue-json-pretty@2.6.0(vue@3.5.28(typescript@5.9.3)):
+    dependencies:
       vue: 3.5.28(typescript@5.9.3)
 
   vue-metamorph@3.3.4(eslint@9.39.2(jiti@2.6.1)):

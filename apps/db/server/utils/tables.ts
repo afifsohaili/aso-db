@@ -1,5 +1,5 @@
 import { Pool } from 'pg'
-import type { FetchTableRecordsOptions, FetchTableRecordsResult } from '../../../shared/types/table'
+import type { FetchTableRecordsOptions, FetchTableRecordsResult } from '../../shared/types/table'
 
 interface JoinInfo {
   tableName: string
