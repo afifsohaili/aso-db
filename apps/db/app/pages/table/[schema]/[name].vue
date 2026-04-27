@@ -1,6 +1,10 @@
 <script setup lang="ts">
-import type { FetchTableRecordsResult, RelationInfo, TableStructure } from '~/shared/types/table'
-import type { SortState } from '~/components/table-detail.vue'
+import type { FetchTableRecordsResult, RelationInfo, TableStructure, TableInfo } from '~/shared/types/table'
+
+interface SortState {
+  column: string | null
+  direction: 'asc' | 'desc' | null
+}
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -18,6 +22,30 @@ const router = useRouter()
 const schema = route.params.schema as string
 const tableName = route.params.name as string
 
+// Fetch tables for command palette
+const { data: tablesData } = await useFetch<{ tables: TableInfo[] }>('/api/tables')
+
+// Command palette state
+const showCommandPalette = ref(false)
+
+// Keyboard shortcut for command palette
+onMounted(() => {
+  const handleKeydown = (e: KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'p') {
+      e.preventDefault()
+      showCommandPalette.value = true
+    }
+  }
+  window.addEventListener('keydown', handleKeydown)
+  onUnmounted(() => {
+    window.removeEventListener('keydown', handleKeydown)
+  })
+})
+
+function onTableSelect(table: TableInfo) {
+  navigateTo(`/table/${table.schema}/${table.name}`)
+}
+
 // Column visibility from URL
 const visibleColumns = computed(() => {
   const cols = route.query.cols
@@ -33,8 +61,11 @@ const activeTab = ref<'data' | 'structure'>('data')
 const page = ref(1)
 const limit = ref(50)
 
-// Sort state
-const sort = ref<SortState>({ column: null, direction: null })
+// Sort state from URL query params
+const sort = ref<SortState>({
+  column: (route.query.sort as string) || null,
+  direction: (route.query.order as 'asc' | 'desc') || null,
+})
 
 // Build sort query string
 const sortQuery = computed(() => {
@@ -102,9 +133,13 @@ const { data: allRelationsData } = await useAsyncData(
 const visibleTables = computed(() => [tableName, ...joinedTables.value])
 
 // Watch for route changes and reset pagination/sort
-watch(() => [route.params.schema, route.params.name], () => {
+watch([() => route.params.schema, () => route.params.name], () => {
   page.value = 1
   sort.value = { column: null, direction: null }
+  const query = { ...route.query }
+  delete query.sort
+  delete query.order
+  router.replace({ query })
 })
 
 function goBack() {
@@ -131,6 +166,16 @@ function updateLimit(newLimit: number) {
 function updateSort(newSort: SortState) {
   sort.value = newSort
   page.value = 1 // Reset to first page when sorting changes
+  const query = { ...route.query }
+  if (newSort.column && newSort.direction) {
+    query.sort = newSort.column
+    query.order = newSort.direction
+  }
+  else {
+    delete query.sort
+    delete query.order
+  }
+  router.replace({ query })
 }
 
 function updateVisibleColumns(cols: string[]) {
@@ -314,5 +359,12 @@ function removeJoin(tableNameToRemove: string) {
         {{ toast.message }}
       </div>
     </main>
+
+    <!-- Command Palette -->
+    <CommandPalette
+      v-model="showCommandPalette"
+      :tables="tablesData?.tables || []"
+      @select="onTableSelect"
+    />
   </div>
 </template>
