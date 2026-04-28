@@ -3,7 +3,7 @@ import { anthropic } from '@ai-sdk/anthropic'
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible'
 import type { QueryResult } from '../../shared/types/query'
 import { extractStatementAtCursor } from '../../utils/ai-statement'
-import { buildSchemaContext } from '../../utils/ai-schema'
+import { buildSchemaContext, extractTableNames } from '../../utils/ai-schema'
 import { getPool } from '../../utils/db'
 
 export interface AiAutocompleteRequest {
@@ -50,17 +50,22 @@ function calculateCost(
   return `$${cost.toFixed(6)}`
 }
 
-function getSystemPrompt(schemaContext: string): string {
+function getSystemPrompt(schemaContext: string, referencedTables: string[]): string {
+  const tableHint = referencedTables.length > 0
+    ? `\nThe user is currently querying these tables: ${referencedTables.join(', ')}.`
+    : ''
+
   return `You are a SQL autocomplete assistant. Given a partial SQL query and database schema, suggest the next part of the query.
 
-Database schema (compact format: table:col:type:flags):
-${schemaContext}
-
 Rules:
-- Return ONLY the SQL snippet that should come next. No explanations.
+- Return ONLY the SQL snippet that should come next. No explanations, no markdown code blocks.
 - Match the SQL dialect (PostgreSQL).
 - Use exact column and table names from the schema.
-- Keep suggestions concise (1-3 lines typically).`
+- Keep suggestions concise (1-3 lines typically).
+- Do not repeat text that is already present in the query.${tableHint}
+
+Database schema (compact format: table:col:type:flags):
+${schemaContext}`
 }
 
 export default defineEventHandler(
@@ -100,12 +105,14 @@ export default defineEventHandler(
     const statement = extractStatementAtCursor(sql, cursorPosition)
     console.log('[AI Backend] Statement before cursor:', statement.beforeCursor.slice(-50))
 
-    // Build schema context
+    // Build schema context (cached per database URL)
     const pool = getPool()
+    const databaseUrl = useRuntimeConfig().databaseUrl as string
     const schemaContext = await buildSchemaContext(
       pool,
       statement.fullStatement,
       maxTokens,
+      databaseUrl,
     )
 
     // Choose provider
@@ -113,11 +120,14 @@ export default defineEventHandler(
 
     let result: { text: string; usage?: { totalTokens?: number } }
 
+    // Extract table names for the prompt hint
+    const referencedTables = extractTableNames(statement.fullStatement)
+
     try {
       if (provider === 'anthropic') {
         const { text, usage } = await generateText({
           model: anthropic(model),
-          system: getSystemPrompt(schemaContext),
+          system: getSystemPrompt(schemaContext, referencedTables),
           prompt: statement.beforeCursor,
           maxTokens: 150,
           temperature: 0.2,
@@ -134,7 +144,7 @@ export default defineEventHandler(
 
         const { text, usage } = await generateText({
           model: providerClient(model),
-          system: getSystemPrompt(schemaContext),
+          system: getSystemPrompt(schemaContext, referencedTables),
           prompt: statement.beforeCursor,
           maxTokens: 150,
           temperature: 0.2,

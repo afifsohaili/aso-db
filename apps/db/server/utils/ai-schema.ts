@@ -1,7 +1,16 @@
 import pkg from 'node-sql-parser'
 import { Pool } from 'pg'
+import { createHash } from 'crypto'
 
 const { Parser } = pkg
+
+// In-memory cache for compact schema text
+// Key: hash of database URL, Value: compact schema text
+const schemaCache = new Map<string, string>()
+
+function getCacheKey(databaseUrl: string, maxTokens: number): string {
+  return createHash('sha256').update(`${databaseUrl}:${maxTokens}`).digest('hex')
+}
 
 export interface CompactColumnInfo {
   name: string
@@ -104,7 +113,17 @@ export async function buildSchemaContext(
   pool: Pool,
   statement: string,
   maxTokens: number,
+  databaseUrl?: string,
 ): Promise<string> {
+  // Check cache first
+  const dbUrl = databaseUrl || process.env.NUXT_DATABASE_URL || ''
+  const cacheKey = getCacheKey(dbUrl, maxTokens)
+  const cached = schemaCache.get(cacheKey)
+  if (cached) {
+    console.log('[AI Backend] Schema cache hit')
+    return cached
+  }
+
   // 1. Extract referenced table names
   const referencedNames = extractTableNames(statement)
 
@@ -233,7 +252,13 @@ export async function buildSchemaContext(
     lines.push(line)
   }
 
-  return lines.join('\n')
+  const result = lines.join('\n')
+
+  // Store in cache
+  schemaCache.set(cacheKey, result)
+  console.log('[AI Backend] Schema cached, tables:', lines.length)
+
+  return result
 }
 
 function prioritizeTables(

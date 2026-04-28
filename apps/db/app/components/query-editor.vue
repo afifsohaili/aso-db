@@ -69,7 +69,7 @@ function createAiExtension(): any[] {
 
   return [
     inlineCompletion({
-      delay: 500,
+      delay: 300,
       fetchFn: async (state, _signal, _view) => {
         const cursor = state.selection.main.head
         const sql = state.doc.toString()

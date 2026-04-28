@@ -29,6 +29,11 @@ onMounted(async () => {
   try {
     currentConfig.value = await $fetch<ConfigResponse>('/api/config')
     aiConfig.value = await $fetch<AiConfigResponse>('/api/ai/config')
+
+    // Pre-fetch AI schema to warm server-side cache
+    if (aiConfig.value?.enabled) {
+      $fetch('/api/ai/schema').catch(() => {})
+    }
   }
   catch {
     // ignore
