@@ -75,6 +75,11 @@ async function main() {
       NUXT_PUBLIC_IS_READ_ONLY: String(!args.allowWrite),
       PORT: String(port),
       NITRO_PORT: String(port),
+      ASO_AI_ENABLED: args.aiEnabled !== undefined ? String(args.aiEnabled) : process.env.ASO_AI_ENABLED,
+      ASO_AI_PROVIDER: args.aiProvider ?? process.env.ASO_AI_PROVIDER,
+      ASO_AI_MODEL: args.aiModel ?? process.env.ASO_AI_MODEL,
+      ASO_AI_API_KEY: args.aiApiKey ?? process.env.ASO_AI_API_KEY,
+      ASO_AI_MAX_TOKENS: args.aiMaxTokens !== undefined ? String(args.aiMaxTokens) : process.env.ASO_AI_MAX_TOKENS,
     },
     stdio: 'inherit',
   })

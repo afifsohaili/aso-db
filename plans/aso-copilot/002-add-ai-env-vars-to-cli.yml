@@ -1,0 +1,13 @@
+status: done
+summary: Add AI env var support to CLI parser and launcher
+references:
+  - files:
+    - apps/db/bin/parse-cli-args.ts
+    - apps/db/bin/asodb.ts
+    - apps/db/test/unit/cli/parse-cli-args.spec.ts
+approach:
+  - Extend `ParsedCliArgs` interface in `parse-cli-args.ts` to include optional `aiProvider`, `aiModel`, `aiApiKey`.
+  - Add CLI flag parsing for `--ai-provider`, `--ai-model`, `--ai-api-key`, `--ai-enabled`.
+  - Pass parsed AI flags as env vars (`ASO_AI_ENABLED`, `ASO_AI_PROVIDER`, `ASO_AI_MODEL`, `ASO_AI_API_KEY`) in `asodb.ts` before spawning server.
+  - Add unit tests in `parse-cli-args.spec.ts` for new flags.
+  - Test that flags are correctly parsed and env vars are set.

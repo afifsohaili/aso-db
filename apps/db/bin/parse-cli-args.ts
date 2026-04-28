@@ -3,6 +3,11 @@ export interface ParsedCliArgs {
   openBrowser: boolean
   allowWrite: boolean
   port?: number
+  aiEnabled?: boolean
+  aiProvider?: string
+  aiModel?: string
+  aiApiKey?: string
+  aiMaxTokens?: number
 }
 
 function isPostgresConnectionString(value: string) {
@@ -14,6 +19,11 @@ export function parseCliArgs(argv: string[]): ParsedCliArgs {
   let openBrowser = true
   let allowWrite = false
   let port: number | undefined
+  let aiEnabled: boolean | undefined
+  let aiProvider: string | undefined
+  let aiModel: string | undefined
+  let aiApiKey: string | undefined
+  let aiMaxTokens: number | undefined
 
   for (let index = 0; index < argv.length; index += 1) {
     const current = argv[index]
@@ -44,6 +54,50 @@ export function parseCliArgs(argv: string[]): ParsedCliArgs {
       continue
     }
 
+    if (current === '--ai-enabled') {
+      aiEnabled = true
+      continue
+    }
+
+    if (current === '--ai-provider') {
+      const next = argv[index + 1]
+      if (!next)
+        throw new Error('Missing value for --ai-provider')
+      aiProvider = next
+      index += 1
+      continue
+    }
+
+    if (current === '--ai-model') {
+      const next = argv[index + 1]
+      if (!next)
+        throw new Error('Missing value for --ai-model')
+      aiModel = next
+      index += 1
+      continue
+    }
+
+    if (current === '--ai-api-key') {
+      const next = argv[index + 1]
+      if (!next)
+        throw new Error('Missing value for --ai-api-key')
+      aiApiKey = next
+      index += 1
+      continue
+    }
+
+    if (current === '--ai-max-tokens') {
+      const next = argv[index + 1]
+      if (!next)
+        throw new Error('Missing value for --ai-max-tokens')
+      const parsedTokens = Number.parseInt(next, 10)
+      if (Number.isNaN(parsedTokens) || parsedTokens <= 0)
+        throw new Error(`Invalid --ai-max-tokens: ${next}`)
+      aiMaxTokens = parsedTokens
+      index += 1
+      continue
+    }
+
     if (current.startsWith('--'))
       throw new Error(`Unknown option: ${current}`)
 
@@ -64,5 +118,10 @@ export function parseCliArgs(argv: string[]): ParsedCliArgs {
     openBrowser,
     allowWrite,
     port,
+    aiEnabled,
+    aiProvider,
+    aiModel,
+    aiApiKey,
+    aiMaxTokens,
   }
 }
