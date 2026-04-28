@@ -1,0 +1,15 @@
+status: done
+summary: Create GET /api/ai/config endpoint
+references:
+  - files:
+    - apps/db/server/api/config.get.ts
+    - apps/db/test/e2e/query-execute.post.spec.ts
+    - apps/db/nuxt.config.ts
+approach:
+  - Create `apps/db/server/api/ai/config.get.ts` following the pattern of `config.get.ts`.
+  - Read AI config from `process.env`: `ASO_AI_ENABLED`, `ASO_AI_PROVIDER_URL`, `ASO_AI_PROVIDER`, `ASO_AI_MODEL`, `ASO_AI_MAX_TOKENS`.
+  - Return `{ enabled, providerUrl, provider, model, maxTokens }` without exposing API key.
+  - Add E2E test in `test/e2e/ai-config.get.spec.ts`.
+  - Test: verify endpoint returns correct config when env vars are set.
+  - Test: verify endpoint returns `enabled: false` by default.
+  - Use `setupE2E` helper pattern with `nuxtConfigOverride` to inject test env vars.
