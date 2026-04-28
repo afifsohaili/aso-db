@@ -1,0 +1,21 @@
+status: done
+summary: Integrate AI autocomplete into query-editor.vue with tests
+references:
+  - files:
+    - apps/db/app/components/query-editor.vue
+    - apps/db/app/components/query-results.vue
+    - apps/db/test/components/query-editor.nuxt.spec.ts
+approach:
+  - Import `nextEditPrediction` from `@marimo-team/codemirror-ai`.
+  - Add new `aiEnabled` prop (optional boolean) to `Props` interface.
+  - Add `lastSuggestion` ref to store `{ tokens, cost }` for display.
+  - Create `aiExtension` using `nextEditPrediction({ delay: 500, fetchFn, acceptOnClick: true, defaultKeymap: true })`.
+  - `fetchFn` calls `$fetch('/api/ai/autocomplete')` with current SQL + cursor position.
+  - Update `createExtensions()` to include `aiExtension` only when `aiEnabled` is true.
+  - Add status dot + token/cost display in editor toolbar (next to existing badges).
+  - Use green/yellow/gray dot pattern for AI status.
+  - Add component test in `test/components/query-editor-ai.nuxt.spec.ts`.
+  - Test: verify nextEditPrediction is added when `aiEnabled=true`.
+  - Test: verify AI status indicators render correctly.
+  - Test: verify fetchFn is called with correct params.
+  - Follow component test pattern from `query-editor.nuxt.spec.ts`.

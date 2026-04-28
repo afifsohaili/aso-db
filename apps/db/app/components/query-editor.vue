@@ -5,6 +5,7 @@ import { EditorState, Prec, Compartment } from '@codemirror/state'
 import { sql } from '@codemirror/lang-sql'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { basicSetup } from 'codemirror'
+import { nextEditPrediction } from '@marimo-team/codemirror-ai'
 import PlayIcon from '~icons/lucide/play'
 import PlayPartialIcon from '~icons/lucide/play-circle'
 import { Badge } from '~/components/ui/badge'
@@ -23,12 +24,14 @@ interface Props {
   loading?: boolean
   readOnly?: boolean
   schema?: Record<string, Record<string, string[]>> | null
+  aiEnabled?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   loading: false,
   readOnly: true,
   schema: null,
+  aiEnabled: false,
 })
 
 const emit = defineEmits<{
@@ -36,6 +39,9 @@ const emit = defineEmits<{
   'run-all': []
   'run-selected': [selectedSql: string]
 }>()
+
+const lastSuggestion = ref<{ tokens: number; cost: string } | null>(null)
+const aiError = ref(false)
 
 const editorRef = ref<HTMLDivElement | null>(null)
 let editorView: EditorView | null = null
@@ -54,6 +60,46 @@ function handleRunAll() {
 
 function handleRunSelected() {
   emit('run-selected', getSelectedText())
+}
+
+function createAiExtension() {
+  if (!props.aiEnabled) return []
+
+  return [
+    nextEditPrediction({
+      delay: 500,
+      fetchFn: async (state) => {
+        const cursor = state.selection.main.head
+        const sql = state.doc.toString()
+
+        try {
+          const res = await $fetch('/api/ai/autocomplete', {
+            method: 'POST',
+            body: { sql, cursorPosition: cursor },
+          }) as { suggestion: string; tokensUsed: number; estimatedCost: string }
+
+          if (!res.suggestion) return null
+
+          lastSuggestion.value = {
+            tokens: res.tokensUsed,
+            cost: res.estimatedCost,
+          }
+          aiError.value = false
+
+          return {
+            newText: res.suggestion,
+            cursorOffset: cursor,
+          }
+        }
+        catch {
+          aiError.value = true
+          return null
+        }
+      },
+      acceptOnClick: true,
+      defaultKeymap: true,
+    }),
+  ]
 }
 
 onMounted(() => {
@@ -83,6 +129,7 @@ onMounted(() => {
       sqlCompartment.of(sql()),
       oneDark,
       customKeymap,
+      ...createAiExtension(),
       EditorView.updateListener.of((update) => {
         if (update.docChanged) {
           emit('update:modelValue', update.state.doc.toString())
@@ -185,6 +232,32 @@ watch(() => props.schema, (newSchema) => {
         <div class="flex items-center gap-2">
           <Badge v-if="readOnly" variant="secondary">Read-only</Badge>
           <Badge v-else variant="destructive">Write mode</Badge>
+
+          <template v-if="aiEnabled">
+            <Separator orientation="vertical" class="h-6" />
+
+            <Tooltip>
+              <TooltipTrigger as-child>
+                <div
+                  class="h-2 w-2 rounded-full"
+                  :class="{
+                    'bg-green-500': !aiError,
+                    'bg-yellow-500': aiError,
+                  }"
+                />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{{ aiError ? 'AI provider error' : 'AI enabled' }}</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <span
+              v-if="lastSuggestion"
+              class="text-xs text-muted-foreground"
+            >
+              {{ lastSuggestion.tokens }}t · {{ lastSuggestion.cost }}
+            </span>
+          </template>
         </div>
       </CardHeader>
 
