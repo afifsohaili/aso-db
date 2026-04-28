@@ -1,0 +1,21 @@
+status: done
+summary: Create statement-at-cursor extraction utility with tests
+references:
+  - files:
+    - apps/db/server/api/query/execute.post.ts
+    - apps/db/test/unit/server/utils/tables.spec.ts
+approach:
+  - Create `apps/db/server/utils/ai-statement.ts`.
+  - Export `extractStatementAtCursor(sql: string, cursor: number)` returning `{ beforeCursor, afterCursor, fullStatement }`.
+  - Use `node-sql-parser` Parser (already installed) to split statements, respecting quotes/comments/CTEs.
+  - Fall back to naive semicolon split if parser fails.
+  - Create `apps/db/test/unit/server/utils/ai-statement.spec.ts`.
+  - Test cases:
+    - Simple single statement
+    - Multi-statement with cursor in second statement
+    - Cursor at end of editor
+    - CTE with semicolons inside
+    - Dollar-quoted strings with semicolons
+    - Empty string
+    - Parser failure fallback
+  - Follow unit test pattern from `tables.spec.ts`: dynamic imports with `await import()`.
