@@ -84,6 +84,15 @@ function createAiExtension(): any[] {
 
           console.log('[AI] Response:', res)
 
+          // Debug: log editor DOM after a delay to see if ghost text was added
+          setTimeout(() => {
+            const ghostEls = editorRef.value?.querySelectorAll('.cm-ghost-text, .cm-ghost-add, [class*="ghost"]')
+            console.log('[AI] Ghost elements found:', ghostEls?.length || 0)
+            ghostEls?.forEach((el, i) => {
+              console.log(`[AI] Ghost ${i}:`, el.className, el.textContent, (el as HTMLElement).style.cssText)
+            })
+          }, 1000)
+
           if (!res.suggestion) return null
 
           lastSuggestion.value = {
@@ -123,6 +132,32 @@ function injectGhostTextStyles() {
     }
   `
   document.head.appendChild(style)
+
+  // Watch for dynamically added ghost text elements and force their color
+  const observer = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      for (const node of mutation.addedNodes) {
+        if (node.nodeType === Node.ELEMENT_NODE) {
+          const el = node as Element
+          const processGhost = (ghost: Element) => {
+            const h = ghost as HTMLElement
+            h.style.setProperty('color', '#ffffff', 'important')
+            h.style.setProperty('opacity', '1', 'important')
+            h.style.setProperty('background', 'rgba(100, 100, 100, 0.3)', 'important')
+            h.style.setProperty('border', '1px dashed #666', 'important')
+            h.style.setProperty('border-radius', '3px', 'important')
+            h.style.setProperty('padding', '0 2px', 'important')
+          }
+          if (el.classList?.contains('cm-ghost-text') || el.classList?.contains('cm-ghost-add')) {
+            processGhost(el)
+          }
+          const children = el.querySelectorAll?.('.cm-ghost-text, .cm-ghost-add')
+          children?.forEach(processGhost)
+        }
+      }
+    }
+  })
+  observer.observe(document.body, { childList: true, subtree: true })
 }
 
 onMounted(() => {
