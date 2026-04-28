@@ -5,7 +5,7 @@ import { EditorState, Prec, Compartment } from '@codemirror/state'
 import { sql } from '@codemirror/lang-sql'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { basicSetup } from 'codemirror'
-import { nextEditPrediction } from '@marimo-team/codemirror-ai'
+import { inlineCompletion } from '@marimo-team/codemirror-ai'
 import PlayIcon from '~icons/lucide/play'
 import PlayPartialIcon from '~icons/lucide/play-circle'
 import { Badge } from '~/components/ui/badge'
@@ -68,9 +68,9 @@ function createAiExtension(): any[] {
   if (!props.aiEnabled) return []
 
   return [
-    nextEditPrediction({
+    inlineCompletion({
       delay: 500,
-      fetchFn: async (state) => {
+      fetchFn: async (state, _signal, _view) => {
         const cursor = state.selection.main.head
         const sql = state.doc.toString()
 
@@ -84,16 +84,7 @@ function createAiExtension(): any[] {
 
           console.log('[AI] Response:', res)
 
-          // Debug: log editor DOM after a delay to see if ghost text was added
-          setTimeout(() => {
-            const ghostEls = editorRef.value?.querySelectorAll('.cm-ghost-text, .cm-ghost-add, [class*="ghost"]')
-            console.log('[AI] Ghost elements found:', ghostEls?.length || 0)
-            ghostEls?.forEach((el, i) => {
-              console.log(`[AI] Ghost ${i}:`, el.className, el.textContent, (el as HTMLElement).style.cssText)
-            })
-          }, 1000)
-
-          if (!res.suggestion) return null
+          if (!res.suggestion) return ''
 
           lastSuggestion.value = {
             tokens: res.tokensUsed,
@@ -101,63 +92,31 @@ function createAiExtension(): any[] {
           }
           aiError.value = false
 
-          return {
-            newText: res.suggestion,
-            cursorOffset: cursor,
-          }
+          return res.suggestion
         }
         catch (err) {
           console.error('[AI] Error:', err)
           aiError.value = true
-          return null
+          return ''
         }
       },
-      acceptOnClick: true,
-      defaultKeymap: true,
     }),
   ]
 }
 
-// Inject dark-theme CSS for ghost text (overrides library's hardcoded green)
+// Inject dark-theme CSS for inline suggestion (overrides library's hardcoded styles)
 function injectGhostTextStyles() {
   if (document.getElementById('ai-ghost-text-styles')) return
   const style = document.createElement('style')
   style.id = 'ai-ghost-text-styles'
   style.textContent = `
-    .cm-ghost-text, .cm-ghost-add {
+    .cm-inline-suggestion {
       color: #a0a0a0 !important;
-      opacity: 0.9 !important;
+      opacity: 0.8 !important;
       font-style: italic !important;
-      background: rgba(160, 160, 160, 0.15) !important;
     }
   `
   document.head.appendChild(style)
-
-  // Watch for dynamically added ghost text elements and force their color
-  const observer = new MutationObserver((mutations) => {
-    for (const mutation of mutations) {
-      for (const node of mutation.addedNodes) {
-        if (node.nodeType === Node.ELEMENT_NODE) {
-          const el = node as Element
-          const processGhost = (ghost: Element) => {
-            const h = ghost as HTMLElement
-            h.style.setProperty('color', '#ffffff', 'important')
-            h.style.setProperty('opacity', '1', 'important')
-            h.style.setProperty('background', 'rgba(100, 100, 100, 0.3)', 'important')
-            h.style.setProperty('border', '1px dashed #666', 'important')
-            h.style.setProperty('border-radius', '3px', 'important')
-            h.style.setProperty('padding', '0 2px', 'important')
-          }
-          if (el.classList?.contains('cm-ghost-text') || el.classList?.contains('cm-ghost-add')) {
-            processGhost(el)
-          }
-          const children = el.querySelectorAll?.('.cm-ghost-text, .cm-ghost-add')
-          children?.forEach(processGhost)
-        }
-      }
-    }
-  })
-  observer.observe(document.body, { childList: true, subtree: true })
 }
 
 onMounted(() => {
