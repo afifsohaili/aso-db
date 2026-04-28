@@ -156,3 +156,21 @@
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
 }
+
+/*
+  AI Copilot ghost text styling
+  Override @marimo-team/codemirror-ai's hardcoded green for dark theme visibility
+*/
+.cm-ghost-text {
+  color: #a0a0a0 !important;
+  opacity: 0.8 !important;
+  font-style: italic !important;
+  background: transparent !important;
+}
+
+.cm-ghost-add {
+  color: #a0a0a0 !important;
+  opacity: 0.8 !important;
+  font-style: italic !important;
+  background: transparent !important;
+}
