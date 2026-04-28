@@ -291,7 +291,24 @@ watch(() => props.aiEnabled, (enabled) => {
             >
               {{ lastSuggestion.tokens }}t · {{ lastSuggestion.cost }}
             </span>
-          </template>
+</template>
+
+<style>
+/* Make ghost text visible on dark themes */
+.cm-ghost-text {
+  color: #a0a0a0 !important;
+  opacity: 0.8 !important;
+  font-style: italic !important;
+  background: transparent !important;
+}
+
+.cm-ghost-add {
+  color: #a0a0a0 !important;
+  opacity: 0.8 !important;
+  font-style: italic !important;
+  background: transparent !important;
+}
+</style>
         </div>
       </CardHeader>
 
