@@ -1,0 +1,26 @@
+status: done
+summary: Create POST /api/ai/autocomplete endpoint with tests
+references:
+  - files:
+    - apps/db/server/api/query/execute.post.ts
+    - apps/db/server/utils/ai-statement.ts
+    - apps/db/server/utils/ai-schema.ts
+    - apps/db/test/e2e/query-execute.post.spec.ts
+    - apps/db/test/e2e/query-execute-readonly.post.spec.ts
+approach:
+  - Create `apps/db/server/api/ai/autocomplete.post.ts`.
+  - Accept `{ sql, cursorPosition }` body.
+  - Check `ASO_AI_ENABLED` env var; return 400 if disabled.
+  - Extract statement at cursor using `ai-statement.ts`.
+  - Build schema context using `ai-schema.ts`.
+  - Route to provider:
+    - If `ASO_AI_PROVIDER === 'anthropic'`: use `@ai-sdk/anthropic` (native API).
+    - Else: use `@ai-sdk/openai-compatible` with `ASO_AI_PROVIDER_URL`.
+  - Call `generateText()` with system prompt + user prompt.
+  - Calculate `tokensUsed` and `estimatedCost`.
+  - Return `{ suggestion, cursorOffset, duration, tokensUsed, estimatedCost }`.
+  - Add E2E test in `test/e2e/ai-autocomplete.post.spec.ts`.
+  - Test: mock AI provider response (intercept or mock `generateText`).
+  - Test: verify disabled state returns 400.
+  - Test: verify statement extraction and schema context are included in prompt.
+  - Use `setupE2E` helper pattern with `nuxtConfigOverride`.
