@@ -12,12 +12,23 @@ interface ConfigResponse {
   isReadOnly?: boolean
 }
 
+interface AiConfigResponse {
+  enabled: boolean
+  providerUrl?: string
+  provider?: string
+  model?: string
+  maxTokens?: number
+}
+
 const currentConfig = ref<ConfigResponse | null>(null)
+const aiConfig = ref<AiConfigResponse | null>(null)
 const isReadOnly = computed(() => currentConfig.value?.isReadOnly ?? true)
+const aiEnabled = computed(() => aiConfig.value?.enabled ?? false)
 
 onMounted(async () => {
   try {
     currentConfig.value = await $fetch<ConfigResponse>('/api/config')
+    aiConfig.value = await $fetch<AiConfigResponse>('/api/ai/config')
   }
   catch {
     // ignore
@@ -306,6 +317,7 @@ function onTableSelect(table: TableInfo) {
             :loading="loading"
             :read-only="isReadOnly"
             :schema="editorSchema"
+            :ai-enabled="aiEnabled"
             @run-all="handleRunAll"
             @run-selected="handleRunSelected"
           />
