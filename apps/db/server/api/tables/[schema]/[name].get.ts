@@ -14,6 +14,14 @@ function isValidIdentifier(name: string): boolean {
   return /^[a-zA-Z_][a-zA-Z0-9_$]*$/.test(name)
 }
 
+// Validate sort column - can be "column" or "table.column"
+function isValidSortColumn(name: string): boolean {
+  const parts = name.split('.')
+  if (parts.length === 1) return isValidIdentifier(parts[0])
+  if (parts.length === 2) return isValidIdentifier(parts[0]) && isValidIdentifier(parts[1])
+  return false
+}
+
 interface JoinClause {
   tableSchema: string
   tableName: string
@@ -179,9 +187,16 @@ async function fetchTableRecords(
   )
   const totalCount = Number.parseInt(countResult.rows[0].count, 10)
 
-  // Add sorting on base table columns only
-  if (sort && order && isValidIdentifier(sort)) {
-    query += ` ORDER BY "${schema}"."${tableName}"."${sort}" ${order.toUpperCase()}`
+  // Add sorting
+  if (sort && order && isValidSortColumn(sort)) {
+    const sortParts = sort.split('.')
+    if (sortParts.length === 2) {
+      // table.column format
+      query += ` ORDER BY "${schema}"."${sortParts[0]}"."${sortParts[1]}" ${order.toUpperCase()}`
+    } else {
+      // plain column format - default to base table
+      query += ` ORDER BY "${schema}"."${tableName}"."${sort}" ${order.toUpperCase()}`
+    }
   }
 
   query += ` LIMIT $1 OFFSET $2`
@@ -237,7 +252,7 @@ export default defineEventHandler(async (event) => {
   const tableName = name
 
   // Validate sort column if provided
-  if (sort && !isValidIdentifier(sort as string)) {
+  if (sort && !isValidSortColumn(sort as string)) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Invalid sort column',

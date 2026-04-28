@@ -16,6 +16,8 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import ArrowLeftIcon from '~icons/heroicons/arrow-left'
 import SettingsIcon from '~icons/heroicons/cog-6-tooth'
+import PanelRightCloseIcon from '~icons/lucide/panel-right-close'
+import PanelRightOpenIcon from '~icons/lucide/panel-right-open'
 
 const route = useRoute()
 const router = useRouter()
@@ -56,6 +58,7 @@ const visibleColumns = computed(() => {
 
 const showColumnDialog = ref(false)
 const activeTab = ref<'data' | 'structure'>('data')
+const joinsCollapsed = ref(false)
 
 // Pagination state
 const page = ref(1)
@@ -242,17 +245,6 @@ function removeJoin(tableNameToRemove: string) {
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
-
-          <Button
-            v-if="data"
-            variant="ghost"
-            size="icon"
-            class="ml-auto"
-            data-testid="column-visibility-toggle"
-            @click="showColumnDialog = true"
-          >
-            <SettingsIcon class="h-4 w-4" />
-          </Button>
         </div>
       </div>
     </div>
@@ -274,60 +266,109 @@ function removeJoin(tableNameToRemove: string) {
       <div v-else class="space-y-4">
         <!-- Tab Switcher -->
         <div class="border-b">
-          <div class="flex gap-1">
-            <button
-              class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
-              :class="activeTab === 'data'
-                ? 'border-primary text-foreground'
-                : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30'"
-              @click="activeTab = 'data'"
+          <div class="flex items-center justify-between">
+            <div class="flex gap-1">
+              <button
+                class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
+                :class="activeTab === 'data'
+                  ? 'border-primary text-foreground'
+                  : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30'"
+                @click="activeTab = 'data'"
+              >
+                Data
+              </button>
+              <button
+                class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
+                :class="activeTab === 'structure'
+                  ? 'border-primary text-foreground'
+                  : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30'"
+                @click="activeTab = 'structure'"
+              >
+                Structure
+              </button>
+            </div>
+            <Button
+              v-if="data && activeTab === 'data'"
+              variant="ghost"
+              size="sm"
+              class="gap-1.5"
+              data-testid="column-visibility-toggle"
+              @click="showColumnDialog = true"
             >
-              Data
-            </button>
-            <button
-              class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
-              :class="activeTab === 'structure'
-                ? 'border-primary text-foreground'
-                : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30'"
-              @click="activeTab = 'structure'"
-            >
-              Structure
-            </button>
+              <SettingsIcon class="h-4 w-4" />
+              <span class="text-sm">Columns</span>
+            </Button>
           </div>
         </div>
 
         <!-- Data Tab -->
-        <div v-show="activeTab === 'data'">
-          <TableDetail
-            :columns="data.columns"
-            :records="data.records"
-            :total-count="data.totalCount"
-            :sort="sort"
-            :visible-columns="visibleColumns"
-            :column-info="data.structure?.columns"
-            @update:sort="updateSort"
-          />
+        <div v-show="activeTab === 'data'" class="flex">
+          <!-- Main content -->
+          <div class="flex-1 min-w-0 space-y-4">
+            <TableDetail
+              :columns="data.columns"
+              :records="data.records"
+              :total-count="data.totalCount"
+              :sort="sort"
+              :visible-columns="visibleColumns"
+              :column-info="data.structure?.columns"
+              @update:sort="updateSort"
+            />
 
-          <Pagination
-            :page="page"
-            :limit="limit"
-            :total-count="data.totalCount"
-            @prev="prevPage"
-            @next="nextPage"
-            @update:limit="updateLimit"
-          />
+            <Pagination
+              :page="page"
+              :limit="limit"
+              :total-count="data.totalCount"
+              @prev="prevPage"
+              @next="nextPage"
+              @update:limit="updateLimit"
+            />
+          </div>
 
-          <JoinSuggestions
-            v-if="allRelationsData && allRelationsData.relations.length > 0"
-            :relations="allRelationsData.relations"
-            :schema="schema"
-            :table-name="tableName"
-            :joined-tables="joinedTables"
-            :visible-tables="visibleTables"
-            :max-reached="maxReached"
-            @add="addJoin"
-            @remove="removeJoin"
-          />
+          <!-- Right sidebar - Joins -->
+          <div
+            v-show="!joinsCollapsed && allRelationsData && allRelationsData.relations.length > 0"
+            class="w-56 border-l flex flex-col bg-background ml-4 shrink-0"
+          >
+            <div class="flex items-center justify-between px-3 py-2 border-b">
+              <span class="text-sm font-medium">Relations</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="h-7 w-7"
+                @click="joinsCollapsed = true"
+              >
+                <PanelRightCloseIcon class="h-4 w-4" />
+              </Button>
+            </div>
+            <div class="p-3 overflow-auto">
+              <JoinSuggestions
+                :relations="allRelationsData.relations"
+                :schema="schema"
+                :table-name="tableName"
+                :joined-tables="joinedTables"
+                :visible-tables="visibleTables"
+                :max-reached="maxReached"
+                @add="addJoin"
+                @remove="removeJoin"
+              />
+            </div>
+          </div>
+
+          <!-- Collapsed sidebar toggle -->
+          <div
+            v-show="joinsCollapsed && allRelationsData && allRelationsData.relations.length > 0"
+            class="border-l flex flex-col items-center py-2 bg-background ml-4 shrink-0"
+          >
+            <Button
+              variant="ghost"
+              size="icon"
+              class="h-7 w-7"
+              @click="joinsCollapsed = false"
+            >
+              <PanelRightOpenIcon class="h-4 w-4" />
+            </Button>
+          </div>
 
           <ColumnVisibilityDialog
             v-model="showColumnDialog"

@@ -275,7 +275,7 @@ function onTableSelect(table: TableInfo) {
     <AppHeader />
 
     <!-- Write mode warning -->
-    <Alert v-if="!isReadOnly" variant="destructive" class="rounded-none border-x-0 border-t-0">
+    <Alert v-if="!isReadOnly" data-testid="write-mode-alert" variant="destructive" class="rounded-none border-x-0 border-t-0">
       <AlertTriangleIcon class="h-4 w-4" />
       <AlertTitle>Write mode enabled</AlertTitle>
       <AlertDescription>

@@ -1,5 +1,6 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { describe, expect, it } from 'vitest'
+import { nextTick } from 'vue'
 import JoinSuggestions from '@/components/join-suggestions'
 import type { RelationInfo } from '@/shared/types/table'
 
@@ -127,5 +128,49 @@ describe('join-suggestions', () => {
     // Should deduplicate: only one button for organisations
     const joinTargets = component.findAll('[data-testid="join-target"]')
     expect(joinTargets.length).toBe(1)
+  })
+
+  it('filters relations by fuzzy search', async () => {
+    const component = await mountSuspended(JoinSuggestions, {
+      props: {
+        relations,
+        schema: 'public',
+        tableName: 'users',
+      },
+    })
+
+    // Before filter: 1 outgoing + 2 incoming = 3 total chips
+    expect(component.findAll('[data-testid="join-target"]').length).toBe(1)
+    expect(component.findAll('[data-testid="join-source"]').length).toBe(2)
+
+    // Type 'ord' in search - should match 'orders' but not 'profiles' or 'organisations'
+    const searchInput = component.find('[data-testid="relation-search"]')
+    await searchInput.setValue('ord')
+    await nextTick()
+
+    expect(component.findAll('[data-testid="join-target"]').length).toBe(0)
+    expect(component.findAll('[data-testid="join-source"]').length).toBe(1)
+    expect(component.find('[data-testid="join-source"]')!.text()).toContain('orders')
+  })
+
+  it('shows all relations when search is cleared', async () => {
+    const component = await mountSuspended(JoinSuggestions, {
+      props: {
+        relations,
+        schema: 'public',
+        tableName: 'users',
+      },
+    })
+
+    const searchInput = component.find('[data-testid="relation-search"]')
+    await searchInput.setValue('ord')
+    await nextTick()
+    expect(component.findAll('[data-testid="join-source"]').length).toBe(1)
+
+    await searchInput.setValue('')
+    await nextTick()
+
+    expect(component.findAll('[data-testid="join-target"]').length).toBe(1)
+    expect(component.findAll('[data-testid="join-source"]').length).toBe(2)
   })
 })

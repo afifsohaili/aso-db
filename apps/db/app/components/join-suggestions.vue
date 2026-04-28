@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import Fuse from 'fuse.js'
+import { Input } from '@/components/ui/input'
 import type { RelationInfo } from '@/shared/types/table'
 
 interface Props {
@@ -20,6 +22,19 @@ const emit = defineEmits<{
   (e: 'add', tableName: string): void
   (e: 'remove', tableName: string): void
 }>()
+
+const searchQuery = ref('')
+
+function relationLabel(relation: RelationInfo, type: 'outgoing' | 'incoming') {
+  const base = props.tableName
+  if (type === 'outgoing' && relation.sourceTable !== base) {
+    return `${relation.targetTable} (via ${relation.sourceTable})`
+  }
+  if (type === 'incoming' && relation.targetTable !== base) {
+    return `${relation.sourceTable} (via ${relation.targetTable})`
+  }
+  return type === 'outgoing' ? relation.targetTable : relation.sourceTable
+}
 
 const allVisible = computed(() => {
   return [props.tableName, ...props.joinedTables]
@@ -64,7 +79,6 @@ function isJoined(tableName: string) {
 }
 
 function getRelationLabel(relation: RelationInfo, type: 'outgoing' | 'incoming') {
-  // If the relation source/target is not the base table, show "via sourceTable"
   const base = props.tableName
   if (type === 'outgoing' && relation.sourceTable !== base) {
     return `${relation.targetTable} (via ${relation.sourceTable})`
@@ -78,20 +92,68 @@ function getRelationLabel(relation: RelationInfo, type: 'outgoing' | 'incoming')
 function getTableName(relation: RelationInfo, type: 'outgoing' | 'incoming') {
   return type === 'outgoing' ? relation.targetTable : relation.sourceTable
 }
+
+function handleClick(tableName: string) {
+  if (isJoined(tableName)) {
+    emit('remove', tableName)
+  } else {
+    emit('add', tableName)
+  }
+}
+
+// Fuzzy search
+const allRelations = computed(() => [
+  ...outgoingRelations.value.map(r => ({ rel: r, type: 'outgoing' as const })),
+  ...incomingRelations.value.map(r => ({ rel: r, type: 'incoming' as const })),
+])
+
+const fuse = computed(() => {
+  return new Fuse(allRelations.value, {
+    keys: [
+      { name: 'rel.sourceTable', weight: 0.4 },
+      { name: 'rel.targetTable', weight: 0.4 },
+      { name: 'rel.sourceColumn', weight: 0.1 },
+      { name: 'rel.targetColumn', weight: 0.1 },
+    ],
+    threshold: 0.3,
+    includeScore: false,
+  })
+})
+
+const filteredOutgoing = computed(() => {
+  if (!searchQuery.value.trim()) return outgoingRelations.value
+  const results = fuse.value.search(searchQuery.value).map(r => r.item)
+  return results.filter(item => item.type === 'outgoing').map(item => item.rel)
+})
+
+const filteredIncoming = computed(() => {
+  if (!searchQuery.value.trim()) return incomingRelations.value
+  const results = fuse.value.search(searchQuery.value).map(r => r.item)
+  return results.filter(item => item.type === 'incoming').map(item => item.rel)
+})
 </script>
 
 <template>
   <div class="space-y-3" data-testid="join-suggestions">
+    <!-- Search -->
+    <Input
+      v-model="searchQuery"
+      placeholder="Filter relations..."
+      class="text-xs h-8"
+      data-testid="relation-search"
+    />
+
     <!-- Outgoing: any visible table can join TO other tables -->
-    <div v-if="outgoingRelations.length > 0">
+    <div v-if="filteredOutgoing.length > 0">
       <p class="text-sm text-muted-foreground font-medium">Joins:</p>
       <div class="flex flex-wrap gap-2">
         <div
-          v-for="rel in outgoingRelations"
+          v-for="rel in filteredOutgoing"
           :key="`${rel.targetSchema}.${rel.targetTable}`"
-          class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-border text-sm transition-colors"
+          class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-border text-sm transition-colors cursor-pointer select-none"
           :class="isJoined(rel.targetTable) ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-accent hover:text-accent-foreground'"
           data-testid="join-target"
+          @click="handleClick(rel.targetTable)"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -110,37 +172,35 @@ function getTableName(relation: RelationInfo, type: 'outgoing' | 'incoming') {
             <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
           </svg>
           <span>{{ getRelationLabel(rel, 'outgoing') }}</span>
-          <button
+          <span
             v-if="isJoined(rel.targetTable)"
             data-testid="remove-join"
-            class="ml-1 p-0.5 hover:bg-primary-foreground/20 rounded"
-            @click.stop="emit('remove', rel.targetTable)"
+            class="ml-1 p-0.5"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6L6 18M6 6l12 12"/></svg>
-          </button>
-          <button
+          </span>
+          <span
             v-else
             data-testid="add-join"
-            class="ml-1 p-0.5 hover:bg-accent-foreground/20 rounded disabled:opacity-30 disabled:cursor-not-allowed"
-            :disabled="props.maxReached"
-            @click.stop="emit('add', rel.targetTable)"
+            class="ml-1 p-0.5"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>
-          </button>
+          </span>
         </div>
       </div>
     </div>
 
     <!-- Incoming: other tables reference any visible table -->
-    <div v-if="incomingRelations.length > 0">
+    <div v-if="filteredIncoming.length > 0">
       <p class="text-sm text-muted-foreground font-medium">Referenced by:</p>
       <div class="flex flex-wrap gap-2">
         <div
-          v-for="rel in incomingRelations"
+          v-for="rel in filteredIncoming"
           :key="`${rel.sourceSchema}.${rel.sourceTable}`"
-          class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-border text-sm transition-colors"
+          class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-border text-sm transition-colors cursor-pointer select-none"
           :class="isJoined(rel.sourceTable) ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-accent hover:text-accent-foreground'"
           data-testid="join-source"
+          @click="handleClick(rel.sourceTable)"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -159,28 +219,25 @@ function getTableName(relation: RelationInfo, type: 'outgoing' | 'incoming') {
             <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
           </svg>
           <span>{{ getRelationLabel(rel, 'incoming') }}</span>
-          <button
+          <span
             v-if="isJoined(rel.sourceTable)"
             data-testid="remove-join"
-            class="ml-1 p-0.5 hover:bg-primary-foreground/20 rounded"
-            @click.stop="emit('remove', rel.sourceTable)"
+            class="ml-1 p-0.5"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6L6 18M6 6l12 12"/></svg>
-          </button>
-          <button
+          </span>
+          <span
             v-else
             data-testid="add-join"
-            class="ml-1 p-0.5 hover:bg-accent-foreground/20 rounded disabled:opacity-30 disabled:cursor-not-allowed"
-            :disabled="props.maxReached"
-            @click.stop="emit('add', rel.sourceTable)"
+            class="ml-1 p-0.5"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>
-          </button>
+          </span>
         </div>
       </div>
     </div>
 
-    <div v-if="outgoingRelations.length === 0 && incomingRelations.length === 0" class="text-sm text-muted-foreground">
+    <div v-if="filteredOutgoing.length === 0 && filteredIncoming.length === 0" class="text-sm text-muted-foreground">
       No relations found
     </div>
   </div>

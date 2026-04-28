@@ -94,6 +94,46 @@ describe('join-suggestions add/remove', () => {
     expect(emitted['remove']).toHaveLength(1)
   })
 
+  it('emits add event when clicking the whole chip', async () => {
+    const component = await mountSuspended(JoinSuggestions, {
+      props: {
+        relations,
+        schema: 'public',
+        tableName: 'users',
+        joinedTables: [],
+      },
+    })
+
+    // Click on the parent chip element, not the inner + icon
+    const chip = component.find('[data-testid="join-target"]')
+    await chip.trigger('click')
+
+    const emitted = component.emitted()
+    expect(emitted['add']).toBeDefined()
+    expect(emitted['add']).toHaveLength(1)
+    expect(emitted['add']![0]![0]).toBe('organisations')
+  })
+
+  it('emits remove event when clicking the whole joined chip', async () => {
+    const component = await mountSuspended(JoinSuggestions, {
+      props: {
+        relations,
+        schema: 'public',
+        tableName: 'users',
+        joinedTables: ['organisations'],
+      },
+    })
+
+    // Click on the parent chip element, not the inner × icon
+    const chip = component.find('[data-testid="join-target"]')
+    await chip.trigger('click')
+
+    const emitted = component.emitted()
+    expect(emitted['remove']).toBeDefined()
+    expect(emitted['remove']).toHaveLength(1)
+    expect(emitted['remove']![0]![0]).toBe('organisations')
+  })
+
   it('applies different styling for joined vs non-joined', async () => {
     const component = await mountSuspended(JoinSuggestions, {
       props: {

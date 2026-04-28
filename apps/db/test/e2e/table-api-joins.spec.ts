@@ -67,4 +67,36 @@ describe('table api with joins', async () => {
     const res = await fetch('/api/tables/joins_test/parents?joins=children,extra1,extra2,extra3')
     expect(res.status).toBe(400)
   })
+
+  it('sorts by base table column with joins', { timeout: 15000 }, async () => {
+    const res = await fetch('/api/tables/joins_test/parents?joins=children&sort=parents.name&order=asc')
+    expect(res.status).toBe(200)
+
+    const json = await res.json()
+    // Alice has 2 children, Bob has 1 → 3 rows total
+    expect(json.records).toHaveLength(3)
+    expect(json.records[0]['parents.name']).toBe('Alice')
+    expect(json.records[1]['parents.name']).toBe('Alice')
+    expect(json.records[2]['parents.name']).toBe('Bob')
+  })
+
+  it('sorts by base table column with joins (descending)', { timeout: 15000 }, async () => {
+    const res = await fetch('/api/tables/joins_test/parents?joins=children&sort=parents.name&order=desc')
+    expect(res.status).toBe(200)
+
+    const json = await res.json()
+    expect(json.records).toHaveLength(3)
+    expect(json.records[0]['parents.name']).toBe('Bob')
+    expect(json.records[1]['parents.name']).toBe('Alice')
+    expect(json.records[2]['parents.name']).toBe('Alice')
+  })
+
+  it('sorts by plain column name defaults to base table with joins', { timeout: 15000 }, async () => {
+    const res = await fetch('/api/tables/joins_test/parents?joins=children&sort=name&order=asc')
+    expect(res.status).toBe(200)
+
+    const json = await res.json()
+    expect(json.records).toHaveLength(3)
+    expect(json.records[0]['parents.name']).toBe('Alice')
+  })
 })
