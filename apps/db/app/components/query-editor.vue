@@ -109,7 +109,24 @@ function createAiExtension(): any[] {
   ]
 }
 
+// Inject dark-theme CSS for ghost text (overrides library's hardcoded green)
+function injectGhostTextStyles() {
+  if (document.getElementById('ai-ghost-text-styles')) return
+  const style = document.createElement('style')
+  style.id = 'ai-ghost-text-styles'
+  style.textContent = `
+    .cm-ghost-text, .cm-ghost-add {
+      color: #a0a0a0 !important;
+      opacity: 0.9 !important;
+      font-style: italic !important;
+      background: rgba(160, 160, 160, 0.15) !important;
+    }
+  `
+  document.head.appendChild(style)
+}
+
 onMounted(() => {
+  injectGhostTextStyles()
   if (!editorRef.value) return
 
   const customKeymap = Prec.high(keymap.of([
