@@ -1,0 +1,23 @@
+status: done
+summary: Create compact schema context builder utility with tests
+references:
+  - files:
+    - apps/db/server/utils/db.ts
+    - apps/db/test/unit/server/utils/tables.spec.ts
+approach:
+  - Create `apps/db/server/utils/ai-schema.ts`.
+  - Export `buildSchemaContext(statement: string, maxTokens: number)` returning compact text string.
+  - Use `node-sql-parser` to extract table names from statement.
+  - Use `listSchema()` from `db.ts` to get schema info.
+  - Prioritize: referenced tables → joined tables (FK) → recently used tables.
+  - Format: `table:col:type:flags,col:type,...` (one line per table, no spaces).
+  - Flags: `pk`, `uk`, `fk→table.col`.
+  - Limit by token estimate (~4 chars per token), stopping at `maxTokens`.
+  - Create `apps/db/test/unit/server/utils/ai-schema.spec.ts`.
+  - Test cases:
+    - Single table referenced
+    - Multi-table with FK relationships
+    - Token budget respected
+    - Empty schema
+    - Parser failure (fallback to all tables)
+  - Follow unit test pattern from `tables.spec.ts`: create test tables in pg, test builder output.
