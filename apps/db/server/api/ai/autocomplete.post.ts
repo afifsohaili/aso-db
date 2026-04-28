@@ -69,6 +69,7 @@ export default defineEventHandler(
 
     // Check if AI is enabled
     const enabled = process.env.ASO_AI_ENABLED === 'true'
+    console.log('[AI Backend] enabled check:', enabled, 'env:', process.env.ASO_AI_ENABLED)
     if (!enabled) {
       throw createError({
         statusCode: 400,
@@ -93,9 +94,11 @@ export default defineEventHandler(
     const { sql, cursorPosition } = await readBody<AiAutocompleteRequest>(
       event,
     )
+    console.log('[AI Backend] Request received, cursor:', cursorPosition, 'sql length:', sql.length)
 
     // Extract statement at cursor
     const statement = extractStatementAtCursor(sql, cursorPosition)
+    console.log('[AI Backend] Statement before cursor:', statement.beforeCursor.slice(-50))
 
     // Build schema context
     const pool = getPool()
@@ -166,6 +169,8 @@ export default defineEventHandler(
     // Calculate cost
     const tokensUsed = result.usage?.totalTokens || 0
     const estimatedCost = calculateCost(tokensUsed, provider, model)
+
+    console.log('[AI Backend] Returning suggestion, length:', result.text.length)
 
     return {
       suggestion: result.text,

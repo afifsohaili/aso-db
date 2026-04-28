@@ -46,6 +46,7 @@ const aiError = ref(false)
 const editorRef = ref<HTMLDivElement | null>(null)
 let editorView: EditorView | null = null
 const sqlCompartment = new Compartment()
+const aiCompartment = new Compartment()
 
 function getSelectedText(): string {
   if (!editorView) return ''
@@ -62,7 +63,8 @@ function handleRunSelected() {
   emit('run-selected', getSelectedText())
 }
 
-function createAiExtension() {
+function createAiExtension(): any[] {
+  console.log('[AI] createAiExtension called, aiEnabled:', props.aiEnabled)
   if (!props.aiEnabled) return []
 
   return [
@@ -72,11 +74,15 @@ function createAiExtension() {
         const cursor = state.selection.main.head
         const sql = state.doc.toString()
 
+        console.log('[AI] fetchFn called, cursor:', cursor, 'sql length:', sql.length)
+
         try {
           const res = await $fetch('/api/ai/autocomplete', {
             method: 'POST',
             body: { sql, cursorPosition: cursor },
           }) as { suggestion: string; tokensUsed: number; estimatedCost: string }
+
+          console.log('[AI] Response:', res)
 
           if (!res.suggestion) return null
 
@@ -91,7 +97,8 @@ function createAiExtension() {
             cursorOffset: cursor,
           }
         }
-        catch {
+        catch (err) {
+          console.error('[AI] Error:', err)
           aiError.value = true
           return null
         }
@@ -129,7 +136,7 @@ onMounted(() => {
       sqlCompartment.of(sql()),
       oneDark,
       customKeymap,
-      ...createAiExtension(),
+      aiCompartment.of([]),
       EditorView.updateListener.of((update) => {
         if (update.docChanged) {
           emit('update:modelValue', update.state.doc.toString())
@@ -155,6 +162,14 @@ onMounted(() => {
   if (props.schema) {
     editorView.dispatch({
       effects: sqlCompartment.reconfigure(sql({ schema: props.schema })),
+    })
+  }
+
+  // Apply AI extension if already enabled
+  if (props.aiEnabled) {
+    console.log('[AI] aiEnabled already true at mount, applying extension')
+    editorView.dispatch({
+      effects: aiCompartment.reconfigure(createAiExtension()),
     })
   }
 })
@@ -185,6 +200,25 @@ watch(() => props.schema, (newSchema) => {
   editorView.dispatch({
     effects: sqlCompartment.reconfigure(schemaConfig),
   })
+}, { immediate: true })
+
+// Reconfigure AI extension when aiEnabled prop changes
+watch(() => props.aiEnabled, (enabled) => {
+  console.log('[AI] aiEnabled changed:', enabled)
+  if (!editorView) return
+
+  if (enabled) {
+    console.log('[AI] Applying AI extension')
+    editorView.dispatch({
+      effects: aiCompartment.reconfigure(createAiExtension()),
+    })
+  }
+  else {
+    console.log('[AI] Removing AI extension')
+    editorView.dispatch({
+      effects: aiCompartment.reconfigure([]),
+    })
+  }
 }, { immediate: true })
 </script>
 
