@@ -1,0 +1,12 @@
+status: done
+summary: Install AI SDK dependencies (ai, @ai-sdk/openai-compatible, @ai-sdk/anthropic)
+references:
+  - files:
+    - apps/db/package.json
+approach:
+  - Add `ai`, `@ai-sdk/openai-compatible`, `@ai-sdk/anthropic` to `apps/db/package.json` dependencies.
+  - Run `pnpm install` in `apps/db/`.
+  - Verify all three packages are in node_modules.
+  - No test needed for package installation — but verify build succeeds after install.
+differences:
+  - Installed versions: ai@^6.0.168, @ai-sdk/openai-compatible@^2.0.41, @ai-sdk/anthropic@^3.0.71
