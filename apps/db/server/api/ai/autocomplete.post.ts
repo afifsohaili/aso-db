@@ -124,12 +124,23 @@ export default defineEventHandler(
     // Extract table names for the prompt hint
     const referencedTables = extractTableNames(statement.fullStatement)
 
+    const systemPrompt = getSystemPrompt(schemaContext, referencedTables)
+    const userPrompt = statement.beforeCursor
+
+    console.log('[AI Backend] === REQUEST BODY ===')
+    console.log('[AI Backend] Provider:', provider)
+    console.log('[AI Backend] Model:', model)
+    console.log('[AI Backend] System prompt length:', systemPrompt.length, 'chars')
+    console.log('[AI Backend] User prompt:', userPrompt)
+    console.log('[AI Backend] Schema context length:', schemaContext.length, 'chars')
+    console.log('[AI Backend] Schema context preview:', schemaContext.slice(0, 200))
+
     try {
       if (provider === 'anthropic') {
         const { text, usage } = await generateText({
           model: anthropic(model),
-          system: getSystemPrompt(schemaContext, referencedTables),
-          prompt: statement.beforeCursor,
+          system: systemPrompt,
+          prompt: userPrompt,
           maxTokens: 150,
           temperature: 0.2,
         })
@@ -145,8 +156,8 @@ export default defineEventHandler(
 
         const { text, usage } = await generateText({
           model: providerClient(model),
-          system: getSystemPrompt(schemaContext, referencedTables),
-          prompt: statement.beforeCursor,
+          system: systemPrompt,
+          prompt: userPrompt,
           maxTokens: 150,
           temperature: 0.2,
         })
