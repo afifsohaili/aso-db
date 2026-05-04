@@ -45,6 +45,7 @@
     "open": "^10.1.2",
     "pg": "^8.16.3",
     "radix-vue": "^1.9.17",
+    "sql-formatter": "^15.7.3",
     "reka-ui": "^2.9.6",
     "shadcn-vue": "^2.6.2",
     "tailwind-merge": "^3.5.0",

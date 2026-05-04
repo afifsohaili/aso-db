@@ -6,8 +6,10 @@ import { sql } from '@codemirror/lang-sql'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { basicSetup } from 'codemirror'
 import { inlineCompletion, rejectInlineCompletion } from '@marimo-team/codemirror-ai'
+import { format } from 'sql-formatter'
 import PlayIcon from '~icons/lucide/play'
 import PlayPartialIcon from '~icons/lucide/play-circle'
+import FormatIcon from '~icons/lucide/align-left'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader } from '~/components/ui/card'
@@ -64,6 +66,51 @@ function handleRunSelected() {
   emit('run-selected', getSelectedText())
 }
 
+function handleFormat() {
+  if (!editorView) return
+
+  const doc = editorView.state.doc
+  const sql = doc.toString()
+  const cursor = editorView.state.selection.main.head
+
+  // Find cursor's logical position (line, column) before formatting
+  const cursorLine = doc.lineAt(cursor)
+  const cursorCol = cursor - cursorLine.from
+
+  try {
+    const formatted = format(sql, {
+      language: 'postgresql',
+      keywordCase: 'upper',
+    })
+
+    // Simple cursor preservation: maintain approximate position
+    // Find the word at cursor in original, then find it in formatted
+    const originalWord = sql.slice(cursor).match(/^\w+/)?.[0] || ''
+    let newCursor = formatted.length
+
+    if (originalWord) {
+      // Try to find the same word near the same relative position
+      const searchStart = Math.max(0, Math.min(cursor, formatted.length - originalWord.length))
+      const found = formatted.indexOf(originalWord, searchStart)
+      if (found !== -1) {
+        newCursor = found
+      }
+    }
+
+    editorView.dispatch({
+      changes: {
+        from: 0,
+        to: doc.length,
+        insert: formatted,
+      },
+      selection: { anchor: Math.min(newCursor, formatted.length) },
+    })
+  }
+  catch (err) {
+    console.error('[Format] Error formatting SQL:', err)
+  }
+}
+
 function applyAiEdits() {
   if (!editorView || pendingEdits.value.length === 0) return false
 
@@ -79,6 +126,12 @@ function applyAiEdits() {
   })
 
   pendingEdits.value = []
+
+  // Auto-format after AI edit
+  setTimeout(() => {
+    handleFormat()
+  }, 50)
+
   return true
 }
 
@@ -332,6 +385,22 @@ watch(() => props.aiEnabled, (enabled) => {
         <div class="flex items-center gap-2">
           <Badge v-if="readOnly" variant="secondary">Read-only</Badge>
           <Badge v-else variant="destructive">Write mode</Badge>
+
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                variant="outline"
+                size="sm"
+                @click="handleFormat"
+              >
+                <FormatIcon class="mr-2 h-4 w-4" />
+                Format
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Format SQL</p>
+            </TooltipContent>
+          </Tooltip>
 
           <template v-if="aiEnabled">
             <Separator orientation="vertical" class="h-6" />
