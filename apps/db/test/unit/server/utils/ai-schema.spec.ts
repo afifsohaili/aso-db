@@ -73,8 +73,8 @@ describe('buildSchemaContext', () => {
     )
 
     expect(context).toContain('ai_test_users')
-    expect(context).toContain('id:int4:pk')
-    expect(context).toContain('email:varchar:uk')
+    expect(context).toContain('id:pk')
+    expect(context).toContain('email:uk')
   })
 
   it('includes FK relationships', async () => {
@@ -107,7 +107,7 @@ describe('buildSchemaContext', () => {
       1500,
     )
 
-    // Check compact format: table:col:type:flags,col:type
-    expect(context).toMatch(/^\w+:[\w:]+/m)
+    // Check compact format: table:col:flags,col (no types)
+    expect(context).toMatch(/^\w+:[\w,→fk:]+/m)
   })
 })

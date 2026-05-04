@@ -41,3 +41,25 @@ export interface QuerySession {
   sqlContent: string
   updatedAt: string
 }
+
+// AI Copilot token-based edit protocol
+export interface TokenEdit {
+  index: number
+  length: number
+  mode: 'replace' | 'insert'
+  text: string
+}
+
+export interface CharEdit {
+  from: number
+  to: number
+  insert: string
+}
+
+export interface AiAutocompleteEditsResponse {
+  suggestion: string
+  edits: CharEdit[]
+  duration: number
+  tokensUsed: number
+  estimatedCost: string
+}

@@ -1,76 +1,78 @@
+import type { QueryResult } from '../../shared/types/query'
+import type { AiAutocompleteEditsResponse } from '../../shared/types/query'
+import {
+  charToTokenIndex,
+  extractStatementAtCursor,
+  formatTokensForAi,
+  parsePipeEdit,
+  tokenizeSql,
+  tokenToCharPosition,
+} from '../../utils/ai-statement'
+import { buildSchemaContext, extractTableNames } from '../../utils/ai-schema'
+import { getPool } from '../../utils/db'
 import { generateText } from 'ai'
 import { anthropic } from '@ai-sdk/anthropic'
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible'
-import type { QueryResult } from '../../shared/types/query'
-import { extractStatementAtCursor } from '../../utils/ai-statement'
-import { buildSchemaContext, extractTableNames } from '../../utils/ai-schema'
-import { getPool } from '../../utils/db'
 
-export interface AiAutocompleteRequest {
+interface AiAutocompleteRequest {
   sql: string
   cursorPosition: number
 }
 
-export interface AiAutocompleteResponse {
-  suggestion: string
-  cursorOffset: number
-  duration: number
-  tokensUsed: number
-  estimatedCost: string
+const COST_PER_1K_TOKENS: Record<string, Record<string, number>> = {
+  'openai-compatible': {
+    'gpt-4o-mini': 0.00015,
+    'gpt-4o': 0.0025,
+    default: 0.0005,
+  },
+  anthropic: {
+    'claude-sonnet-4-20250514': 0.003,
+    'claude-haiku-4-20250514': 0.00025,
+    default: 0.0005,
+  },
 }
 
-const COST_PER_MILLION_TOKENS: Record<string, { input: number; output: number }> = {
-  'openai:gpt-4o-mini': { input: 0.15, output: 0.6 },
-  'openai:gpt-4o': { input: 2.5, output: 10 },
-  'anthropic:claude-haiku': { input: 0.25, output: 1.25 },
-  'anthropic:claude-sonnet': { input: 3.0, output: 15.0 },
-}
-
-function calculateCost(
-  tokensUsed: number,
-  provider: string,
-  model: string,
-): string {
-  const key = `${provider}:${model}`
-  const costs = COST_PER_MILLION_TOKENS[key]
-
-  if (!costs) {
-    // Fallback: estimate at $0.50/1M input + $2/1M output
-    const estimated = (tokensUsed / 1_000_000) * 1.25
-    return `$${estimated.toFixed(6)}`
-  }
-
-  // Assume 80% input, 20% output for simplicity
-  const inputTokens = tokensUsed * 0.8
-  const outputTokens = tokensUsed * 0.2
-  const cost
-    = (inputTokens / 1_000_000) * costs.input
-    + (outputTokens / 1_000_000) * costs.output
-
+function calculateCost(tokensUsed: number, provider: string, model: string): string {
+  const providerCosts = COST_PER_1K_TOKENS[provider] || COST_PER_1K_TOKENS['openai-compatible']
+  const costPerToken = providerCosts[model] || providerCosts.default
+  const cost = (tokensUsed / 1000) * costPerToken
   return `$${cost.toFixed(6)}`
 }
 
-function getSystemPrompt(schemaContext: string, referencedTables: string[]): string {
-  const tableHint = referencedTables.length > 0
-    ? `\nThe user is currently querying these tables: ${referencedTables.join(', ')}.`
-    : ''
-
+function getSystemPrompt(schemaContext: string): string {
   return `You are a SQL autocomplete assistant. You MUST complete the partial SQL query using ONLY the columns and tables listed in the schema below.
 
 CRITICAL RULES — FOLLOW EXACTLY:
 1. You MUST ONLY use column names that appear in the schema below. NEVER invent or hallucinate columns.
 2. You MUST ONLY use table names that appear in the schema below.
-3. Return ONLY the SQL snippet that should come next. No explanations, no markdown code blocks, no backticks.
+3. Return ONLY pipe-delimited edits. No explanations, no markdown, no backticks.
 4. Match PostgreSQL syntax exactly.
 5. Keep suggestions concise (1-3 lines typically).
-6. Do not repeat text that is already present in the user's query.${tableHint}
+6. Do not repeat text that is already present in the user's query.
+
+EDIT FORMAT (one per line):
+index|length|mode|text
+- index: starting token index to edit
+- length: number of tokens to replace (0 for insert)
+- mode: 'r' for replace, 'i' for insert
+- text: the replacement text (may contain spaces, no pipes)
+
+EXAMPLE:
+Tokens: 0|select 1|* 2|from 3|users
+User wants to expand * to columns:
+1|1|r|id, email, created_at
+
+EXAMPLE 2:
+Tokens: 0|select 1|u. 2|from 3|users
+User wants alias expansion:
+1|3|r|u.id, u.email from users u
 
 Available database schema (ONLY these columns exist):
 ${schemaContext}`
 }
 
 export default defineEventHandler(
-  async (event): Promise<AiAutocompleteResponse | QueryResult[]> => {
+  async (event): Promise<AiAutocompleteEditsResponse | QueryResult[]> => {
     const startTime = Date.now()
 
     // Check if AI is enabled
@@ -116,24 +118,30 @@ export default defineEventHandler(
       databaseUrl,
     )
 
-    // Choose provider
-    const provider = process.env.ASO_AI_PROVIDER || 'openai-compatible'
+    // Tokenize the full statement
+    const tokens = tokenizeSql(statement.fullStatement)
+    const cursorTokenIndex = charToTokenIndex(tokens, cursorPosition - (sql.length - statement.fullStatement.length))
 
-    let result: { text: string; usage?: { totalTokens?: number } }
+    // Build pipe-delimited token representation
+    const tokenizedQuery = formatTokensForAi(tokens)
 
-    // Extract table names for the prompt hint
-    const referencedTables = extractTableNames(statement.fullStatement)
+    // Build the prompt
+    const systemPrompt = getSystemPrompt(schemaContext)
+    const userPrompt = `Tokenized query (cursor at index ${cursorTokenIndex}):
+${tokenizedQuery}
 
-    const systemPrompt = getSystemPrompt(schemaContext, referencedTables)
-    const userPrompt = statement.beforeCursor
+Provide edits:`
 
     console.log('[AI Backend] === REQUEST BODY ===')
-    console.log('[AI Backend] Provider:', provider)
+    console.log('[AI Backend] Provider:', process.env.ASO_AI_PROVIDER || 'openai-compatible')
     console.log('[AI Backend] Model:', model)
     console.log('[AI Backend] System prompt length:', systemPrompt.length, 'chars')
     console.log('[AI Backend] User prompt:', userPrompt)
     console.log('[AI Backend] Schema context length:', schemaContext.length, 'chars')
     console.log('[AI Backend] Schema context preview:', schemaContext.slice(0, 200))
+
+    const provider = process.env.ASO_AI_PROVIDER || 'openai-compatible'
+    let result: { text: string; usage?: { totalTokens?: number } }
 
     try {
       if (provider === 'anthropic') {
@@ -164,42 +172,76 @@ export default defineEventHandler(
         result = { text, usage }
       }
     }
-    catch (error) {
-      // Map common errors
-      if (error instanceof Error) {
-        if (error.message.includes('401')) {
-          throw createError({
-            statusCode: 401,
-            statusMessage: 'Invalid API key',
-          })
-        }
-        if (error.message.includes('429')) {
-          throw createError({
-            statusCode: 429,
-            statusMessage: 'Rate limited by AI provider',
-          })
-        }
-      }
+    catch (err) {
+      console.error('[AI Backend] AI provider error:', err)
+
+      const errorMessage
+        = err instanceof Error ? err.message : 'Unknown error'
+      const statusCode = errorMessage.includes('401')
+        ? 401
+        : errorMessage.includes('429')
+          ? 429
+          : 500
 
       throw createError({
-        statusCode: 500,
-        statusMessage: 'AI provider error',
-        cause: error,
+        statusCode,
+        statusMessage: `AI provider error: ${errorMessage}`,
       })
     }
+
+    // Parse pipe-delimited edits
+    const edits = parsePipeEdits(result.text)
+    console.log('[AI Backend] Parsed edits:', edits.length)
+
+    // Convert token edits to character positions
+    const charEdits = edits.map((edit) => {
+      const from = tokenToCharPosition(tokens, edit.index)
+      const to = tokenToCharPosition(tokens, edit.index + edit.length)
+      return {
+        from,
+        to,
+        insert: edit.text,
+      }
+    })
 
     // Calculate cost
     const tokensUsed = result.usage?.totalTokens || 0
     const estimatedCost = calculateCost(tokensUsed, provider, model)
 
-    console.log('[AI Backend] Returning suggestion, length:', result.text.length)
+    // Compute ghost text suggestion (text from cursor to first unchanged position)
+    const cursorInStatement = cursorPosition - (sql.length - statement.fullStatement.length)
+    let suggestion = ''
+    if (charEdits.length > 0) {
+      const firstEdit = charEdits[0]!
+      // Ghost text is the inserted text minus any prefix that overlaps with after-cursor text
+      suggestion = firstEdit.insert
+    }
+
+    console.log('[AI Backend] Returning', charEdits.length, 'edits, suggestion:', suggestion.slice(0, 50))
 
     return {
-      suggestion: result.text,
-      cursorOffset: cursorPosition,
+      suggestion,
+      edits: charEdits,
       duration: Date.now() - startTime,
       tokensUsed,
       estimatedCost,
     }
   },
 )
+
+function parsePipeEdits(responseText: string): Array<{ index: number; length: number; mode: 'replace' | 'insert'; text: string }> {
+  const edits: Array<{ index: number; length: number; mode: 'replace' | 'insert'; text: string }> = []
+
+  const lines = responseText.trim().split('\n')
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed) continue
+
+    const edit = parsePipeEdit(trimmed)
+    if (edit) {
+      edits.push(edit)
+    }
+  }
+
+  return edits
+}

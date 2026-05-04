@@ -5,7 +5,7 @@ import { EditorState, Prec, Compartment } from '@codemirror/state'
 import { sql } from '@codemirror/lang-sql'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { basicSetup } from 'codemirror'
-import { inlineCompletion } from '@marimo-team/codemirror-ai'
+import { inlineCompletion, rejectInlineCompletion } from '@marimo-team/codemirror-ai'
 import PlayIcon from '~icons/lucide/play'
 import PlayPartialIcon from '~icons/lucide/play-circle'
 import { Badge } from '~/components/ui/badge'
@@ -42,6 +42,7 @@ const emit = defineEmits<{
 
 const lastSuggestion = ref<{ tokens: number; cost: string } | null>(null)
 const aiError = ref(false)
+const pendingEdits = ref<Array<{ from: number; to: number; insert: string }>>([])
 
 const editorRef = ref<HTMLDivElement | null>(null)
 let editorView: EditorView | null = null
@@ -63,6 +64,31 @@ function handleRunSelected() {
   emit('run-selected', getSelectedText())
 }
 
+function applyAiEdits() {
+  if (!editorView || pendingEdits.value.length === 0) return false
+
+  const changes = pendingEdits.value.map(edit => ({
+    from: edit.from,
+    to: edit.to,
+    insert: edit.insert,
+  }))
+
+  editorView.dispatch({
+    changes,
+    selection: { anchor: changes[changes.length - 1].from + changes[changes.length - 1].insert.length },
+  })
+
+  pendingEdits.value = []
+  return true
+}
+
+function clearAiSuggestion() {
+  pendingEdits.value = []
+  if (editorView) {
+    rejectInlineCompletion(editorView)
+  }
+}
+
 function createAiExtension(): any[] {
   console.log('[AI] createAiExtension called, aiEnabled:', props.aiEnabled)
   if (!props.aiEnabled) return []
@@ -80,11 +106,19 @@ function createAiExtension(): any[] {
           const res = await $fetch('/api/ai/autocomplete', {
             method: 'POST',
             body: { sql, cursorPosition: cursor },
-          }) as { suggestion: string; tokensUsed: number; estimatedCost: string }
+          }) as {
+            suggestion: string
+            edits: Array<{ from: number; to: number; insert: string }>
+            tokensUsed: number
+            estimatedCost: string
+          }
 
           console.log('[AI] Response:', res)
 
-          if (!res.suggestion) return ''
+          if (!res.suggestion) {
+            pendingEdits.value = []
+            return ''
+          }
 
           lastSuggestion.value = {
             tokens: res.tokensUsed,
@@ -92,11 +126,15 @@ function createAiExtension(): any[] {
           }
           aiError.value = false
 
+          // Store edits for surgical application on Tab
+          pendingEdits.value = res.edits || []
+
           return res.suggestion
         }
         catch (err) {
           console.error('[AI] Error:', err)
           aiError.value = true
+          pendingEdits.value = []
           return ''
         }
       },
@@ -104,7 +142,7 @@ function createAiExtension(): any[] {
   ]
 }
 
-// Inject dark-theme CSS for inline suggestion (overrides library's hardcoded styles)
+// Inject dark-theme CSS for inline suggestion
 function injectGhostTextStyles() {
   if (document.getElementById('ai-ghost-text-styles')) return
   const style = document.createElement('style')
@@ -135,6 +173,23 @@ onMounted(() => {
       key: 'Shift-Mod-Enter',
       run: () => {
         handleRunSelected()
+        return true
+      },
+    },
+    {
+      key: 'Tab',
+      run: () => {
+        // If we have pending edits, apply them surgically
+        if (pendingEdits.value.length > 0) {
+          return applyAiEdits()
+        }
+        return false // Let default Tab behavior handle indent
+      },
+    },
+    {
+      key: 'Escape',
+      run: () => {
+        clearAiSuggestion()
         return true
       },
     },
@@ -169,7 +224,7 @@ onMounted(() => {
     parent: editorRef.value,
   })
 
-  // Apply schema if already available (race condition: watch fires before onMounted)
+  // Apply schema if already available
   if (props.schema) {
     editorView.dispatch({
       effects: sqlCompartment.reconfigure(sql({ schema: props.schema })),
@@ -302,7 +357,7 @@ watch(() => props.aiEnabled, (enabled) => {
             >
               {{ lastSuggestion.tokens }}t · {{ lastSuggestion.cost }}
             </span>
-</template>
+          </template>
         </div>
       </CardHeader>
 

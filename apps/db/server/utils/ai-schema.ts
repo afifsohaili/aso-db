@@ -235,7 +235,7 @@ export async function buildSchemaContext(
 
   for (const t of prioritized) {
     const cols = t.columns.map((c) => {
-      let colStr = `${c.name}:${c.type}`
+      let colStr = c.name
       if (c.isPrimaryKey) colStr += ':pk'
       if (c.isUnique) colStr += ':uk'
       if (c.foreignKey) colStr += `:fk→${c.foreignKey.table}.${c.foreignKey.column}`
