@@ -31,6 +31,12 @@ describe('parseCliArgs', () => {
     expect(result.allowWrite).toBe(true)
   })
 
+  it('parses -w shorthand flag', () => {
+    const result = parseCliArgs(['-w', 'postgresql://user:pass@localhost:5432/db'])
+    expect(result.connectionString).toBe('postgresql://user:pass@localhost:5432/db')
+    expect(result.allowWrite).toBe(true)
+  })
+
   it('parses --port flag', () => {
     const result = parseCliArgs(['--port', '3333', 'postgresql://user:pass@localhost:5432/db'])
     expect(result.connectionString).toBe('postgresql://user:pass@localhost:5432/db')

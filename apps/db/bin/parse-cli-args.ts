@@ -33,7 +33,7 @@ export function parseCliArgs(argv: string[]): ParsedCliArgs {
       continue
     }
 
-    if (current === '--allow-write') {
+    if (current === '--allow-write' || current === '-w') {
       allowWrite = true
       continue
     }
